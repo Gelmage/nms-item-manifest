@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+
+# Never commit a save, or anything decoded out of one.
+*.hg
+save*.json
+*_PATCHED*
+snapshots/
+
+# build.py --bake writes a personal copy of the page. Regenerate with
+# `python3 build.py` before committing.

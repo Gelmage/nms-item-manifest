@@ -1,0 +1,944 @@
+<meta charset="utf-8">
+<title>Nutrient Processor</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --void:#080D13; --hull:#111A23; --hull-2:#18242F; --edge:#24333F;
+  --amber:#F2A03D; --amber-dim:#8A5F26; --cyan:#57D3D8; --jade:#6FCF8E;
+  --rose:#E2705F; --text:#E7EEF3; --muted:#8FA3B2; --faint:#5F7383;
+  --r:3px;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--void); color:var(--text);
+  font:400 15px/1.6 "IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  margin:0; padding-block:0 64px;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+h1,h2,h3,.ui{font-family:"Chakra Petch","IBM Plex Sans",system-ui,sans-serif;letter-spacing:.02em}
+.num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+
+/* masthead */
+header{border-bottom:1px solid var(--edge);background:linear-gradient(180deg,#0E161E,#080D13);padding-block:26px 22px}
+.brand{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+h1{font-size:28px;font-weight:700;margin:0;text-transform:uppercase;color:var(--amber)}
+.sub{color:var(--muted);font-size:13.5px}
+.kicker{font-family:"Chakra Petch",sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint);margin:0 0 6px}
+
+/* freshness */
+.fresh{margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;
+  border:1px solid var(--edge);border-left:3px solid var(--cyan);background:var(--hull);padding:10px 14px;border-radius:var(--r)}
+.fresh.stale{border-left-color:var(--amber)}
+.fresh b{font-weight:600}
+.drop{margin-left:auto;display:flex;gap:10px;align-items:center}
+button{font-family:"Chakra Petch",sans-serif;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--amber);color:#1A1206;border:0;padding:9px 16px;border-radius:var(--r);cursor:pointer;font-weight:600}
+button:hover{background:#FFB454}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+input[type=file]{display:none}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--edge);
+  border:1px solid var(--edge);margin-top:26px;border-radius:var(--r);overflow:hidden}
+.tile{background:var(--hull);padding:14px 16px}
+.tile .k{font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);font-family:"Chakra Petch",sans-serif}
+.tile .v{font-size:23px;margin-top:4px;font-weight:500}
+.tile .v.u{color:var(--amber)} .tile .v.n{color:var(--cyan)} .tile .v.q{color:#E4C766}
+
+/* sections */
+section{margin-top:48px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.16em;color:var(--text);margin:0 0 4px}
+.lede{color:var(--muted);font-size:14px;margin:0 0 20px;max-width:64ch}
+.rule{height:1px;background:var(--edge);margin:10px 0 20px}
+
+/* bait */
+.baits{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px}
+.bait{border:1px solid var(--edge);background:var(--hull);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.bait.ready{border-left:3px solid var(--jade)}
+.bait.needs{border-left:3px solid var(--amber)}
+.bait.blocked{border-left:3px solid var(--rose)}
+.bait h3{margin:0;font-size:16px;font-weight:600}
+.bait .eff{color:var(--muted);font-size:13px;margin:-4px 0 0}
+.bait .at{color:var(--cyan);font-size:12.5px;margin-top:-4px}
+.count{display:flex;align-items:baseline;gap:8px}
+.count .big{font-size:30px;font-weight:500;line-height:1}
+.count .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-family:"Chakra Petch",sans-serif}
+.ready .big{color:var(--jade)} .needs .big{color:var(--amber)} .blocked .big{color:var(--rose)}
+.after{font-size:12.5px;color:var(--cyan)}
+.ing{list-style:none;margin:0;padding:8px 0 0;border-top:1px solid var(--edge);display:flex;flex-direction:column;gap:4px}
+.ing li{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.ing .have{color:var(--muted)}
+.ing li.short .have{color:var(--rose)}
+
+/* tables */
+.tablewrap{overflow-x:auto;border:1px solid var(--edge);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:640px}
+th{font-family:"Chakra Petch",sans-serif;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);
+  text-align:left;padding:10px 14px;background:var(--hull-2);border-bottom:1px solid var(--edge);white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid #1B2831;vertical-align:top}
+tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even){background:#0D151C}
+td.r{text-align:right}
+.pill{display:inline-block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:2px;
+  font-family:"Chakra Petch",sans-serif;background:#1E2C36;color:var(--muted);white-space:nowrap}
+.pill.health{background:#23332A;color:var(--jade)}
+.pill.life{background:#1E2F33;color:var(--cyan)}
+.pill.hazard{background:#332A1E;color:var(--amber)}
+.pill.stam{background:#2E2733;color:#C9A0E0}
+.qty{color:var(--jade)}
+.ins{color:var(--muted);font-size:12.5px}
+.filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filterbar input{background:var(--hull);border:1px solid var(--edge);color:var(--text);padding:8px 12px;
+  border-radius:var(--r);font:inherit;font-size:13.5px;min-width:220px}
+.filterbar input:focus{outline:2px solid var(--cyan);outline-offset:-1px}
+.filterbar .count-note{color:var(--faint);font-size:12.5px;font-family:"IBM Plex Mono",monospace}
+.pill.step{background:#1B2831;color:var(--faint)}
+.pill.step.multi{background:#2A2436;color:#C9A0E0}
+.ins .made,td .made{color:var(--cyan)}
+button.made{background:none;border:0;padding:0;font:inherit;font-size:inherit;
+  color:var(--cyan);cursor:pointer;text-transform:none;letter-spacing:0}
+button.made:hover{text-decoration:underline}
+td .made::before{content:"\21b3 ";opacity:.7}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{font-family:"Chakra Petch",sans-serif;font-size:11px;letter-spacing:.09em;text-transform:uppercase;
+  background:var(--hull-2);color:var(--muted);border:1px solid var(--edge);
+  padding:5px 11px;border-radius:2px;cursor:pointer;line-height:1.5}
+.chip:hover{border-color:var(--faint);color:var(--text)}
+.chip[aria-pressed="true"]{background:var(--amber);color:#1A1206;border-color:var(--amber);font-weight:600}
+.chip .n{opacity:.62;margin-left:6px;font-family:"IBM Plex Mono",monospace}
+.chip:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.toggle{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--amber);width:15px;height:15px;cursor:pointer}
+.plan{border:1px solid var(--edge);border-left:3px solid var(--cyan);background:var(--hull);
+  border-radius:var(--r);padding:18px 20px;margin-bottom:16px}
+.planhead{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;
+  border-bottom:1px solid var(--edge);padding-bottom:14px;margin-bottom:16px}
+.planhead h3{margin:0;font-size:18px;font-weight:600}
+.planmeta{margin:6px 0 0;color:var(--muted);font-size:13px}
+.planctl{margin-left:auto;display:flex;gap:12px;align-items:center}
+.planctl input{width:74px;background:var(--void);border:1px solid var(--edge);color:var(--text);
+  padding:6px 8px;border-radius:var(--r);font:inherit;font-family:"IBM Plex Mono",monospace}
+#consolBtn[aria-pressed="true"]{background:var(--cyan);color:#06201F}
+.closeplan{background:none;border:1px solid var(--edge);color:var(--muted);padding:7px 13px}
+.closeplan:hover{background:var(--hull-2);color:var(--text)}
+.plancols{display:grid;grid-template-columns:minmax(210px,1fr) minmax(300px,2.1fr);gap:26px}
+.plancols h4{font-family:"Chakra Petch",sans-serif;font-size:10.5px;letter-spacing:.17em;
+  text-transform:uppercase;color:var(--faint);margin:0 0 10px}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px;counter-reset:s}
+.steps.consol li{grid-template-columns:44px 200px 1fr}
+.steps li{display:grid;grid-template-columns:28px 152px 1fr;gap:12px;align-items:baseline;font-size:13.5px}
+.steps .op{color:var(--amber);font-family:"Chakra Petch",sans-serif;font-size:12px;
+  letter-spacing:.04em;text-transform:uppercase}
+.steps .eq{color:var(--muted)} .steps .eq b{color:var(--text);font-weight:600}
+.steps .arrow{color:var(--jade);padding:0 3px}
+button.dish{background:none;border:0;padding:0;font:inherit;color:var(--text);cursor:pointer;
+  text-align:left;letter-spacing:0;text-transform:none}
+button.dish:hover{color:var(--cyan);text-decoration:underline}
+@media (max-width:760px){.plancols{grid-template-columns:1fr}
+  .steps li{grid-template-columns:24px 1fr;row-gap:2px}.steps .eq{grid-column:2}}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;margin-top:22px;border-bottom:1px solid var(--edge)}
+.tab{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);
+  padding:10px 16px;font-family:"Chakra Petch",sans-serif;font-size:12.5px;letter-spacing:.11em;
+  text-transform:uppercase;cursor:pointer;border-radius:0}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:var(--amber);border-bottom-color:var(--amber)}
+section[data-view]{display:none}
+section[data-view].on{display:block}
+.bar{display:block;height:6px;background:var(--void);border:1px solid var(--edge);border-radius:2px;
+  overflow:hidden;min-width:110px;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--amber)}
+.bar i.hot{background:var(--rose)}
+.bar i.cool{background:var(--jade)}
+.boxbtn{background:none;border:0;padding:0;font:inherit;color:var(--text);cursor:pointer;
+  text-align:left;letter-spacing:0;text-transform:none}
+.boxbtn:hover{color:var(--cyan)}
+.caret{color:var(--faint);display:inline-block;width:12px}
+.boxrow.open{background:var(--hull-2)}
+.boxrow.open .boxbtn{color:var(--cyan)}
+.boxbody td{background:var(--void);padding:14px 18px}
+.ing.cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:2px 26px}
+.locrow{border:1px solid var(--edge);border-left:3px solid var(--cyan);background:var(--hull);
+  border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+.locrow h4{margin:0 0 9px;font-size:15px;font-weight:600}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--edge);color:var(--faint);font-size:12.5px}
+footer a{color:var(--muted)}
+@media (max-width:520px){h1{font-size:22px}.count .big{font-size:26px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header>
+  <div class="wrap">
+    <p class="kicker">No Man's Sky &middot; save reader</p>
+    <div class="brand">
+      <h1>Nutrient Processor</h1>
+      <span class="sub">every dish and bait your current stock can actually produce</span>
+    </div>
+    <div class="fresh" id="fresh">
+      <span id="freshText">&nbsp;</span>
+      <span class="drop">
+        <button id="refresh" hidden>Refresh</button>
+        <button id="pick">Load a save</button>
+        <input type="file" id="file" accept=".hg">
+      </span>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs wrap" id="tabs" role="tablist">
+  <button class="tab" role="tab" data-view="bait">Bait</button>
+  <button class="tab" role="tab" data-view="cook">Cooking</button>
+  <button class="tab" role="tab" data-view="refine">Refining</button>
+  <button class="tab" role="tab" data-view="craft">Crafting</button>
+  <button class="tab" role="tab" data-view="inv">Inventory</button>
+</nav>
+
+<div class="wrap">
+  <div class="tiles" id="tiles"></div>
+
+  <section data-view="bait">
+    <h2>Fishing bait</h2>
+    <p class="lede">Two mechanics stack: rarity lures raise the quality of whatever is biting, condition lures unlock fish that do not spawn otherwise. <span id="baitNote"></span></p>
+    <div class="baits" id="baits"></div>
+  </section>
+
+  <section data-view="cook">
+    <h2>What you can cook right now</h2>
+    <p class="lede">Every dish your stock can reach, including ones that need an intermediate cooked first &mdash; those show a step count, and the <span class="made">arrowed</span> ingredients are the ones you make along the way. Counts are per-dish maximums: each assumes you spend your stock on that dish alone. <b>Click any dish name</b> for a full build plan.</p>
+    <div class="chips" id="chips" role="group" aria-label="Filter by effect"></div>
+    <div class="filterbar">
+      <input id="q" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Filter by dish or ingredient" aria-label="Filter dishes">
+      <label class="toggle" for="direct"><input type="checkbox" id="direct"> Direct from raw stock only</label>
+      <span class="count-note" id="count"></span>
+    </div>
+    <div class="plan" id="plan" hidden></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Can make</th><th>Steps</th><th>Dish</th><th>Effect</th><th>Value</th><th>Operation</th><th>From</th></tr></thead>
+        <tbody id="cookRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section data-view="refine">
+    <h2>Refinery</h2>
+    <p class="lede">The same reach calculation across the game's 361 refiner recipes &mdash; what your stock can be turned into, and what that unlocks in turn.</p>
+    <div class="chips" id="chipsR" role="group" aria-label="Filter by product family"></div>
+    <div class="filterbar">
+      <input id="qR" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Filter by product or input" aria-label="Filter refinery products">
+      <label class="toggle" for="directR"><input type="checkbox" id="directR"> Direct from raw stock only</label>
+      <span class="count-note" id="countR"></span>
+    </div>
+    <div class="plan" id="planR" hidden></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Can make</th><th>Steps</th><th>Product</th><th>Value</th><th>Operation</th><th>From</th></tr></thead>
+        <tbody id="refineRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section data-view="cook">
+    <h2>Cooking ingredients on hand</h2>
+    <p class="lede">Everything in your save flagged as a cooking ingredient, named properly &mdash; no more guessing which raw meat is which.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Held</th><th>Ingredient</th><th>Category</th><th>Feeds</th></tr></thead>
+        <tbody id="ingRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section data-view="craft">
+    <h2>Crafting</h2>
+    <p class="lede">The game's 1,967 crafting recipes, solved the same way &mdash; what your stock can build, what needs an intermediate, and a full plan for any of it.</p>
+    <div class="chips" id="chipsC" role="group" aria-label="Filter by product family"></div>
+    <div class="filterbar">
+      <input id="qC" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Filter by product or component" aria-label="Filter craftable items">
+      <label class="toggle" for="directC"><input type="checkbox" id="directC"> Direct from raw stock only</label>
+      <span class="count-note" id="countC"></span>
+    </div>
+    <div class="plan" id="planC" hidden></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Can make</th><th>Steps</th><th>Item</th><th>Value</th><th>Operation</th><th>From</th></tr></thead>
+        <tbody id="craftRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section data-view="inv">
+    <h2>Where everything is</h2>
+    <p class="lede">Every container in your save, how full it actually is, and what it holds. Capacity is the unlocked-slot count &mdash; the game only writes occupied slots, so a full-looking list usually is not.</p>
+    <div class="filterbar">
+      <input id="qI" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Find an item across every container" aria-label="Locate an item">
+      <button type="button" id="consolBtn">Consolidation opportunities</button>
+      <span class="count-note" id="countI"></span>
+    </div>
+    <div class="plan" id="consol" hidden></div>
+    <div id="locate"></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Container</th><th>Class</th><th>Slots</th><th>Free</th><th class="r">Contents value</th></tr></thead>
+        <tbody id="invRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="wrap">
+    Recipes, item names and effect tables datamined from No Man's Sky v7.00 by
+    <a href="https://github.com/bradhave94/nms-data-extractor">bradhave94/nms-data-extractor</a>.
+    Save decoding is the LZ4 reader from <b>nms-core-run</b>. Everything happens in your browser &mdash;
+    the save is never uploaded, and never written to.
+  </footer>
+</div>
+
+<script id="nmsIndex" type="application/json">__INDEX__</script>
+<script id="nmsBaked" type="application/json">__BAKED__</script>
+<script id="nmsNames" type="application/json">__NAMES__</script>
+<script>
+const IDX=JSON.parse(document.getElementById("nmsIndex").textContent);
+const BAKED=JSON.parse(document.getElementById("nmsBaked").textContent);
+const CNAMES=JSON.parse(document.getElementById("nmsNames").textContent);
+const IT=IDX.items;
+const $=s=>document.querySelector(s);
+const fmt=n=>(n??0).toLocaleString("en-US");
+const nameOf=id=>(IT[id]&&IT[id].n)||id;
+/* 1,967 items carry their own RequiredItems. Reshaped into the same form the
+   solver already takes, so crafting costs one line rather than a second engine. */
+IDX.craft=Object.keys(IT).filter(k=>IT[k].r).map(k=>({i:IT[k].r,o:k,q:1,op:"Craft"}));
+
+/* ---------- LZ4 (from nms-core-run, verified) ---------- */
+function lz4Block(src,sOff,sLen,dstSize){
+  const dst=new Uint8Array(dstSize); const sEnd=sOff+sLen; let s=sOff,d=0;
+  while(s<sEnd){
+    const token=src[s++]; let lit=token>>4;
+    if(lit===15){let b;do{b=src[s++];lit+=b;}while(b===255);}
+    for(let i=0;i<lit;i++) dst[d++]=src[s++];
+    if(s>=sEnd) break;
+    const off=src[s++]|(src[s++]<<8);
+    let ml=token&15;
+    if(ml===15){let b;do{b=src[s++];ml+=b;}while(b===255);}
+    ml+=4; let m=d-off;
+    for(let i=0;i<ml;i++) dst[d++]=dst[m++];
+  }
+  return dst.subarray(0,d);
+}
+function inflateSave(buf){
+  const u=new Uint8Array(buf), dv=new DataView(buf); const parts=[]; let off=0,total=0;
+  while(off+16<=u.length){
+    if(dv.getUint32(off,true)!==0xFEEDA1E5) break;
+    const cs=dv.getUint32(off+4,true), ds=dv.getUint32(off+8,true); off+=16;
+    if(cs===0||off+cs>u.length) break;
+    const out=lz4Block(u,off,cs,ds); parts.push(out); total+=out.length; off+=cs;
+  }
+  if(!parts.length) throw new Error("No LZ4 blocks found. Pick save.hg or save2.hg, not accountdata.hg.");
+  const all=new Uint8Array(total); let p=0;
+  for(const q of parts){all.set(q,p); p+=q.length;}
+  let end=all.length; while(end>0&&all[end-1]===0) end--;
+  return JSON.parse(new TextDecoder("utf-8").decode(all.subarray(0,end)));
+}
+
+/* ---------- locate the player's data ----------
+   Keys resolved from MBINCompiler mapping 6.11.0.1, verified 2026-09-25.
+   ActiveContext decides which save is live: reading the wrong one silently
+   reports the other save's numbers, and nothing about their shape differs. */
+const ACTIVE="XTp", CTX={Main:"vLc",Season:"2YS"}, PS="6f=";
+const SLOTS=":No", ITEM="b2n", AMT="1o9";
+const SHIPS="@Cs", TOOLS="SuJ", ARCH="R@v", STORE="OsQ", TOOLDATA="97S", VEHIC="P;m";
+const UNITS="wGS", NANITES="7QL", SPECIALS="kN;";
+
+function playerState(root){
+  const k=CTX[root[ACTIVE]];
+  const direct=k&&root[k]&&root[k][PS];
+  if(direct&&typeof direct==="object") return direct;
+  let best=null,size=-1;                      // unknown context: take the fuller one
+  for(const c of Object.values(CTX)){
+    const cand=root[c]&&root[c][PS];
+    if(!cand||typeof cand!=="object") continue;
+    let n=0;
+    for(const v of Object.values(cand)) if(v&&Array.isArray(v[SLOTS])) n+=v[SLOTS].length;
+    if(n>size){best=cand;size=n;}
+  }
+  if(!best) throw new Error("No player data in this file — pick save.hg or save2.hg.");
+  return best;
+}
+function harvest(ps){
+  const held={};
+  const take=sl=>{
+    for(const s of sl||[]){
+      if(!s||typeof s!=="object") continue;
+      const id=s[ITEM], q=s[AMT];
+      if(typeof id!=="string"||id[0]!=="^") continue;
+      if(!Number.isInteger(q)||q<=0) continue;
+      const k=id.slice(1).split("#")[0];
+      held[k]=(held[k]||0)+q;
+    }
+  };
+  for(const v of Object.values(ps))            // suit, cargo, tech, freighter, chests
+    if(v&&typeof v==="object"&&Array.isArray(v[SLOTS])) take(v[SLOTS]);
+  for(const sh of ps[SHIPS]||[]) take((sh[STORE]||{})[SLOTS]);
+  (ps[VEHIC]||[]).forEach((v,i)=>{
+    const base=(v.NKm||"").trim()||("Exocraft "+(i+1));
+    [[";l5",""],["gan"," \u2014 Cargo"],["PMT"," \u2014 Technology"]]
+      .forEach(pair=>add(base+pair[1],v[pair[0]]));
+  });
+  for(const g of [TOOLS,ARCH])
+    for(const t of ps[g]||[]) take((((t[TOOLDATA]||{})[STORE])||t[STORE]||{})[SLOTS]);
+  return held;
+}
+/* the same container walk the launcher does, for a hand-picked file */
+function containersFrom(ps){
+  const out=[];
+  const add=(label,node,cls)=>{
+    if(!node||typeof node!=="object"||!Array.isArray(node[SLOTS])) return;
+    const own=node["NKm"];                    // a name the player gave it wins
+    if(typeof own==="string"&&own.trim()) label=own.trim();
+    const valid=node["hl?"];
+    out.push({label:label,cls:(node["B@N"]||{})["1o6"]||cls||"",
+      used:node[SLOTS].length, cap:Array.isArray(valid)?valid.length:node[SLOTS].length,
+      items:node[SLOTS].filter(x=>x&&typeof x[ITEM]==="string"&&Number.isInteger(x[AMT])&&x[AMT]>0)
+        .map(x=>({id:x[ITEM].slice(1).split("#")[0],n:x[AMT],
+                  m:x["F9q"]||0,t:(x["Vn8"]||{})["elv"]||""}))});
+  };
+  for(const [k,v] of Object.entries(ps))
+    if(v&&typeof v==="object"&&Array.isArray(v[SLOTS]))
+      add(CNAMES[k]||((v["WA4"]||{})["rri"])||"Storage",v);
+  (ps[SHIPS]||[]).forEach((sh,i)=>{
+    const base=(sh.NKm||"").trim()||("Starship "+(i+1));
+    [[";l5",""],["gan"," \u2014 Cargo"],["PMT"," \u2014 Technology"]]
+      .forEach(pair=>add(base+pair[1],sh[pair[0]]));
+  });
+  for(const g of [TOOLS,ARCH])
+    (ps[g]||[]).forEach((t,i)=>add(t.NKm||("Multitool "+(i+1)),(t[TOOLDATA]||{})[STORE]||t[STORE]));
+  return out.filter(c=>c.cap||c.items.length);
+}
+function currencies(ps){
+  return {units:ps[UNITS],nanites:ps[NANITES],quicksilver:ps[SPECIALS]};
+}
+
+/* ---------- crafting maths ---------- */
+function makeable(id,held,depth){
+  depth=depth||0;
+  const have=held[id]||0;
+  const rec=IT[id]&&IT[id].r;
+  if(!rec||depth>3) return have;
+  let sub=Infinity;
+  for(const [rid,q] of rec) sub=Math.min(sub,Math.floor(makeable(rid,held,depth+1)/q));
+  return have+(isFinite(sub)?sub:0);
+}
+
+/* Iterative fixed point over a recipe set. Pass 1 is what raw stock makes
+   directly; each further pass may use anything an earlier pass produced, so a
+   dish that needs a cooked intermediate surfaces at the step it first becomes
+   reachable.
+
+   Counts are per-dish maximums: each assumes you spend your stock on that one
+   dish. Two dishes competing for the same carbon will both show their own best
+   case, which is the same assumption the direct-only view already made. */
+function solveChain(held,recipes,maxSteps){
+  const info=new Map();
+  for(const [k,v] of Object.entries(held)) if(v>0) info.set(k,{n:v,step:0,via:null});
+  for(let step=1; step<=maxSteps; step++){
+    let changed=false;
+    const asOf=new Map(info);            // frozen view of the previous pass
+    for(const r of recipes){
+      let n=Infinity;
+      for(const [iid,q] of r.i){
+        const cur=asOf.get(iid);
+        n=Math.min(n,cur?Math.floor(cur.n/q):0);
+        if(n<=0) break;
+      }
+      if(n<=0||!isFinite(n)) continue;
+      const total=n*(r.q||1);
+      const prev=info.get(r.o);
+      if(!prev||total>prev.n){
+        info.set(r.o,{n:total, step:prev&&prev.step?Math.min(prev.step,step):step, via:r});
+        changed=true;
+      }
+    }
+    if(!changed) break;
+  }
+  return info;
+}
+function rowsFor(held,recipes,maxSteps,catBy){
+  const info=solveChain(held,recipes,maxSteps);
+  rowsFor.lastInfo=info;
+  const out=[];
+  for(const [id,v] of info){
+    if(!v.via) continue;                       // raw stock, not something you make
+    const r=v.via, e=effectOf(id), meta=IT[id]||{};
+    out.push({
+      n:v.n, step:v.step, name:nameOf(id), qty:r.q||1, e:e,
+      cat: catBy==="effect" ? ((e&&e.cat)||"No effect")
+                             : (meta.g||"Other"),
+      val:meta.v||0, op:r.op||"",
+      ins:r.i.map(([iid,q])=>({q:q,name:nameOf(iid),
+                               cooked:(info.get(iid)||{}).step>0}))
+    });
+  }
+  return out.sort((a,b)=>a.step-b.step||b.n-a.n||a.name.localeCompare(b.name));
+}
+
+const BAIT=[
+ ["FISHBAIT_1","raises size &amp; rarity of your catch"],
+ ["FISHBAIT_2","raises size &amp; rarity considerably"],
+ ["FISHBAIT_3","the strongest rarity lure in the game"],
+ ["FISHBAIT_DAY","unlocks fish that only surface in daylight"],
+ ["FISHBAIT_NIGHT","unlocks fish that only surface after dark"],
+ ["FISHBAIT_STORM","unlocks fish that only surface during storms"]
+];
+const EFFECT_CLASS={"Health":"health","Life Support":"life","Hazard Protection":"hazard","Stamina":"stam"};
+
+function effectOf(id){
+  const it=IT[id]; if(!it||!it.ec) return null;
+  const parts=[];
+  if(it.es) for(const [k,v] of Object.entries(it.es)){
+    parts.push(k.replace(/RechargeAmount|Amount|Bonus/g,"").replace(/([a-z])([A-Z])/g,"$1 $2")+" +"+v);
+  }
+  return {cat:it.ec, detail:parts.join(", ")};
+}
+
+/* ---------- render ---------- */
+function render(held,cur,stamp,label,containers){
+  window.__containers=containers||window.__containers||[];
+  document.querySelectorAll("section[data-view] .tablewrap, #baits, .chips, .filterbar")
+    .forEach(el=>el.style.display="");
+  document.querySelectorAll("section[data-view] .lede").forEach(el=>el.style.opacity="");
+  const age=(Date.now()/1000-stamp)/86400;
+  const f=$("#fresh");
+  f.className="fresh"+(age>2?" stale":"");
+  $("#freshText").innerHTML="Reading <b>"+label+"</b> &middot; saved "+
+    new Date(stamp*1000).toLocaleString()+" &middot; "+
+    (age<1?"today":Math.round(age)+" days ago");
+
+  window.__held=held;
+  window.__cook=rowsFor(held,IDX.cook,6,"effect");     window.__cookInfo=rowsFor.lastInfo;
+  window.__refine=rowsFor(held,IDX.refine,6,"group");  window.__refineInfo=rowsFor.lastInfo;
+  window.__craft=rowsFor(held,IDX.craft,6,"group");    window.__craftInfo=rowsFor.lastInfo;
+  const ingCount=Object.keys(held).filter(k=>IT[k]&&IT[k].cv!=null).length;
+  const cookable=IDX.cook.filter(r=>r.i.every(([id,q])=>(held[id]||0)>=q));
+  $("#tiles").innerHTML=[
+    ["Units",fmt(cur.units),"u"],["Nanites",fmt(cur.nanites),"n"],["Quicksilver",fmt(cur.quicksilver),"q"],
+    ["Item types held",fmt(Object.keys(held).length),""],
+    ["Cooking ingredients",fmt(ingCount),""],
+    ["Dishes reachable",fmt(window.__cook?window.__cook.length:0),""]
+  ].map(([k,v,c])=>'<div class="tile"><div class="k">'+k+'</div><div class="v num '+c+'">'+v+'</div></div>').join("");
+
+  /* bait */
+  let anyBlocked=0;
+  $("#baits").innerHTML=BAIT.map(([id,eff])=>{
+    const rec=(IT[id]&&IT[id].r)||[];
+    const now=rec.length?Math.min(...rec.map(([r,q])=>Math.floor((held[r]||0)/q))):0;
+    const after=rec.length?Math.min(...rec.map(([r,q])=>Math.floor(makeable(r,held)/q))):0;
+    const stock=held[id]||0;
+    const cls=stock>0?"ready":(now>0?"ready":(after>0?"needs":"blocked"));
+    if(cls==="blocked") anyBlocked++;
+    // where it already is - a lure sitting in the Bait Box is easy to miss
+    const at=(window.__containers||[]).filter(c=>c.items.some(x=>x.id===id))
+      .map(c=>{const n=c.items.find(x=>x.id===id).n; return fmt(n)+" in "+c.label;}).join(", ");
+    const ings=rec.map(([r,q])=>{
+      const have=held[r]||0, short=have<q;
+      const mk=short?makeable(r,held):0;
+      return '<li class="'+(short?"short":"")+'"><span>'+q+' &times; '+nameOf(r)+'</span>'+
+        '<span class="have num">'+fmt(have)+(short&&mk>=q?' &rarr; craft '+fmt(mk):'')+'</span></li>';
+    }).join("");
+    return '<article class="bait '+cls+'"><h3>'+nameOf(id)+'</h3><p class="eff">'+eff+'</p>'+
+      (stock>0
+        ? '<div class="count"><span class="big num">'+fmt(stock)+'</span>'+
+          '<span class="lbl">in stock</span></div>'+
+          (at?'<div class="at">'+at+'</div>':'')+
+          '<div class="after">'+now+' more from raw stock'+
+          (after>now?', '+after+' after crafting parts':'')+'</div>'
+        : '<div class="count"><span class="big num">'+now+'</span>'+
+          '<span class="lbl">ready now</span></div>'+
+          (after>now?'<div class="after">'+after+' after crafting the missing parts</div>':''))+
+      '<ul class="ing">'+ings+'</ul></article>';
+  }).join("");
+  $("#baitNote").textContent=anyBlocked?"":"Every lure is reachable from what you already hold.";
+
+  /* cooking + refining tables */
+  PICKED.cook=null; PICKED.refine=null;
+  buildChips("cook",window.__cook);   drawRows("cook",window.__cook);
+  buildChips("refine",window.__refine); drawRows("refine",window.__refine);
+  PICKED.craft=null;
+  buildChips("craft",window.__craft);   drawRows("craft",window.__craft);
+  renderInventory();
+
+  /* ingredients */
+  const ing=Object.entries(held).filter(([k])=>IT[k]&&IT[k].cv!=null)
+    .map(([k,v])=>({k:k,v:v,n:nameOf(k),g:(IT[k].g||""),cv:IT[k].cv}))
+    .sort((a,b)=>b.v-a.v);
+  $("#ingRows").innerHTML=ing.map(x=>
+    '<td class="r num qty">'+fmt(x.v)+'</td><td>'+x.n+'</td><td class="ins">'+x.g+'</td>'+
+    '<td class="ins num">'+(IDX.cook.filter(r=>r.i.some(([id])=>id===x.k)).length)+' recipes</td>'
+  ).map(t=>'<tr>'+t+'</tr>').join("") || '<tr><td colspan="4" class="ins">No cooking ingredients found in this save.</td></tr>';
+}
+/* ---------- build plans ----------
+   "How do I make X" answered as something you can execute: spend what you
+   already hold first, craft only the shortfall, and emit the operations in
+   dependency order so the list reads top to bottom at the machine. */
+function buildPlan(targetId,qty,info,held){
+  const stock=new Map(Object.entries(held));
+  const consumed=new Map(), missing=new Map(), steps=[];
+
+  function take(id,want){
+    const have=stock.get(id)||0;
+    const used=Math.min(have,want);
+    if(used>0){ stock.set(id,have-used); consumed.set(id,(consumed.get(id)||0)+used); }
+    return want-used;                       // still needed after spending stock
+  }
+  function expand(id,want,depth){
+    const short=take(id,want);
+    if(short<=0) return;
+    const via=(info.get(id)||{}).via;
+    if(!via||depth>8){ missing.set(id,(missing.get(id)||0)+short); return; }
+    const per=via.q||1;
+    const batches=Math.ceil(short/per);
+    for(const [iid,q] of via.i) expand(iid,batches*q,depth+1);
+    steps.push({op:via.op||"", out:id, made:batches*per, batches:batches,
+                ins:via.i.map(([iid,q])=>({id:iid,qty:batches*q}))});
+  }
+  expand(targetId,qty,0);
+
+  // post-order already gives dependency order; merge repeats of one output
+  const merged=[];
+  for(const st of steps){
+    const prev=merged.find(m=>m.out===st.out&&m.op===st.op);
+    if(prev){
+      prev.made+=st.made; prev.batches+=st.batches;
+      st.ins.forEach((x,i)=>prev.ins[i].qty+=x.qty);
+    } else merged.push(st);
+  }
+  return {consumed:consumed, missing:missing, steps:merged};
+}
+
+function renderPlan(which,rows,name,qty){
+  const SUF={cook:"",refine:"R",craft:"C"};
+  const box=document.getElementById("plan"+SUF[which]);
+  const row=rows.find(r=>r.name===name);
+  const id=Object.keys(IT).find(k=>IT[k]&&IT[k].n===name);
+  const info={cook:window.__cookInfo,refine:window.__refineInfo,craft:window.__craftInfo}[which];
+  if(!row||!id||!info){ box.hidden=true; return; }
+  qty=Math.max(1,Math.min(qty||1,row.n||1));
+
+  const plan=buildPlan(id,qty,info,window.__held);
+  const meta=IT[id]||{}, e=row.e;
+  const cls=e?(EFFECT_CLASS[e.cat]||""):"";
+
+  const mats=[...plan.consumed.entries()].sort((a,b)=>b[1]-a[1]).map(([mid,n])=>
+    '<li><span>'+nameOf(mid)+'</span><span class="have num">'+fmt(n)+
+    ' <span class="ins">of '+fmt(window.__held[mid]||0)+'</span></span></li>').join("");
+  const gaps=[...plan.missing.entries()].map(([mid,n])=>
+    '<li class="short"><span>'+nameOf(mid)+'</span><span class="have num">need '+fmt(n)+
+    ', have '+fmt(window.__held[mid]||0)+'</span></li>').join("");
+
+  const steps=plan.steps.map((st,i)=>
+    '<li><span class="pill step">'+(i+1)+'</span>'+
+    '<span class="op">'+st.op+'</span>'+
+    '<span class="eq">'+st.ins.map(x=>fmt(x.qty)+' &times; '+nameOf(x.id)).join(" + ")+
+    ' <span class="arrow">&rarr;</span> <b>'+fmt(st.made)+' &times; '+nameOf(st.out)+'</b></span></li>').join("");
+
+  box.hidden=false;
+  box.innerHTML=
+    '<div class="planhead"><div>'+
+      '<h3>How to make '+name+'</h3>'+
+      '<p class="planmeta">'+(e?'<span class="pill '+cls+'">'+e.cat+'</span> ':'')+
+      (meta.v?fmt(meta.v)+' units each &middot; ':'')+'you can make '+fmt(row.n)+
+      ' &middot; '+plan.steps.length+' operation'+(plan.steps.length===1?'':'s')+'</p></div>'+
+      '<div class="planctl"><label class="toggle">Quantity '+
+      '<input type="number" id="planqty'+SUF[which]+'" min="1" max="'+row.n+'" value="'+qty+'"></label>'+
+      '<button type="button" class="closeplan" id="planclose'+SUF[which]+'">Close</button></div>'+
+    '</div>'+
+    '<div class="plancols">'+
+      '<div><h4>You will spend</h4><ul class="ing">'+(mats||'<li class="ins">nothing &mdash; you already hold it</li>')+gaps+'</ul></div>'+
+      '<div><h4>Build order</h4><ol class="steps">'+(steps||'<li class="ins">no crafting needed</li>')+'</ol></div>'+
+    '</div>';
+
+  document.getElementById("planqty"+SUF[which]).addEventListener("change",ev=>
+    renderPlan(which,rows,name,parseInt(ev.target.value,10)||1));
+  document.getElementById("planclose"+SUF[which]).addEventListener("click",()=>{
+    box.hidden=true; OPEN[which]=null;
+  });
+  box.scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+const OPEN={cook:null,refine:null,craft:null};
+
+/* ---------- inventory ---------- */
+const OPENBOX=new Set();
+/* Items sitting in more than one container with room to merge.
+   Technology is skipped on purpose: a damaged ship slot reads as an item with a
+   max of 100, and "merge your 23 damaged slots" is not advice. */
+function consolidation(){
+  const places=new Map();
+  for(const c of (window.__containers||[]))
+    for(const it of c.items){
+      if(it.t&&it.t!=="Substance"&&it.t!=="Product") continue;
+      if(!it.m) continue;
+      if(!places.has(it.id)) places.set(it.id,[]);
+      places.get(it.id).push({where:c.label,n:it.n,m:it.m});
+    }
+  const rows=[];
+  for(const [id,pl] of places){
+    if(pl.length<2) continue;
+    const total=pl.reduce((a,x)=>a+x.n,0);
+    const max=Math.max(...pl.map(x=>x.m));
+    const need=Math.ceil(total/max), freed=pl.length-need;
+    if(freed>0) rows.push({id:id,name:nameOf(id),stacks:pl.length,need:need,
+                           freed:freed,total:total,max:max,
+                           pl:pl.sort((a,b)=>b.n-a.n)});
+  }
+  return rows.sort((a,b)=>b.freed-a.freed||b.total-a.total);
+}
+function renderConsolidation(){
+  const box=$("#consol");
+  if(box.hidden){ box.innerHTML=""; return; }
+  const rows=consolidation();
+  const slots=rows.reduce((a,r)=>a+r.freed,0);
+  box.innerHTML='<div class="planhead"><div><h3>Consolidation opportunities</h3>'+
+    '<p class="planmeta">'+fmt(rows.length)+' item'+(rows.length===1?'':'s')+
+    ' split across containers with room to merge \u00b7 <b>'+fmt(slots)+
+    ' slots recoverable</b></p></div></div>'+
+    (rows.length?'<ol class="steps consol">'+rows.slice(0,60).map(r=>
+      '<li><span class="pill step">\u2212'+r.freed+'</span>'+
+      '<span class="op">'+r.name+'</span>'+
+      '<span class="eq">'+r.stacks+' stacks \u2192 <b>'+r.need+'</b>'+
+      ' <span class="ins">('+fmt(r.total)+' total, '+fmt(r.max)+'/stack)</span><br>'+
+      r.pl.map(x=>'<span class="ins">'+fmt(x.n)+' in '+x.where+'</span>').join(" \u00b7 ")+
+      '</span></li>').join("")+'</ol>'
+    :'<p class="ins">Nothing worth merging \u2014 every stack is already where it should be.</p>');
+}
+function renderInventory(){
+  const cons=window.__containers||[];
+  const val=c=>c.items.reduce((a,x)=>a+x.n*(((IT[x.id]||{}).v)||0),0);
+  const used=cons.reduce((a,c)=>a+c.used,0), cap=cons.reduce((a,c)=>a+c.cap,0);
+  const worth=cons.reduce((a,c)=>a+val(c),0);
+  $("#countI").textContent=fmt(used)+" of "+fmt(cap)+" slots used \u00b7 "+
+    fmt(cap-used)+" free \u00b7 contents worth ~"+fmt(worth)+" units";
+
+  const sorted=cons.slice().sort((a,b)=>val(b)-val(a));
+  $("#invRows").innerHTML=sorted.map((c,i)=>{
+    const pct=c.cap?Math.round(100*c.used/c.cap):0;
+    const tone=pct>=100?"hot":(pct<50?"cool":"");
+    const open=OPENBOX.has(i);
+    const contents=c.items.slice().sort((a,b)=>
+        (b.n*(((IT[b.id]||{}).v)||0))-(a.n*(((IT[a.id]||{}).v)||0)))
+      .map(x=>'<li><span>'+nameOf(x.id)+'</span><span class="have num">'+fmt(x.n)+
+        (((IT[x.id]||{}).v)?' <span class="ins">~'+fmt(x.n*IT[x.id].v)+'u</span>':'')+
+        '</span></li>').join("");
+    return '<tr class="boxrow'+(open?" open":"")+'" data-box="'+i+'">'+
+      '<td><button type="button" class="boxbtn"><span class="caret">'+(open?"\u25be":"\u25b8")+
+        '</span> '+c.label+'</button></td>'+
+      '<td class="ins">'+(c.cls||"")+'</td>'+
+      '<td><span class="num">'+c.used+' / '+c.cap+'</span>'+
+      '<span class="bar"><i class="'+tone+'" style="width:'+Math.min(pct,100)+'%"></i></span></td>'+
+      '<td class="num '+(c.cap-c.used?"":"ins")+'">'+(c.cap-c.used||"full")+'</td>'+
+      '<td class="r num">'+fmt(val(c))+'</td></tr>'+
+      (open?'<tr class="boxbody"><td colspan="5"><ul class="ing cols">'+
+        (contents||'<li class="ins">empty</li>')+'</ul></td></tr>':'');
+  }).join("") || '<tr><td colspan="5" class="ins">No containers in this save.</td></tr>';
+  $("#invRows").querySelectorAll(".boxrow").forEach(tr=>
+    tr.querySelector(".boxbtn").addEventListener("click",()=>{
+      const i=+tr.dataset.box;
+      OPENBOX.has(i)?OPENBOX.delete(i):OPENBOX.add(i);
+      renderInventory();
+    }));
+  locate();
+  renderConsolidation();
+}
+function locate(){
+  const q=($("#qI").value||"").trim().toLowerCase();
+  const box=$("#locate");
+  if(q.length<2){ box.innerHTML=""; return; }
+  const hits=new Map();
+  for(const c of (window.__containers||[]))
+    for(const it of c.items){
+      const nm=nameOf(it.id);
+      if(!nm.toLowerCase().includes(q)) continue;
+      if(!hits.has(nm)) hits.set(nm,[]);
+      hits.get(nm).push({where:c.label,n:it.n});
+    }
+  if(!hits.size){ box.innerHTML='<p class="ins">Nothing held matches that.</p>'; return; }
+  box.innerHTML=[...hits.entries()].sort((a,b)=>
+      b[1].reduce((x,y)=>x+y.n,0)-a[1].reduce((x,y)=>x+y.n,0)).slice(0,12)
+    .map(([nm,rows])=>{
+      const total=rows.reduce((a,r)=>a+r.n,0);
+      const where=rows.sort((a,b)=>b.n-a.n)
+        .map(r=>'<li><span>'+r.where+'</span><span class="have num">'+fmt(r.n)+'</span></li>').join("");
+      return '<div class="locrow"><h4>'+nm+' <span class="ins num">'+fmt(total)+
+             ' across '+rows.length+' container'+(rows.length===1?'':'s')+'</span></h4>'+
+             '<ul class="ing">'+where+'</ul></div>';
+    }).join("");
+}
+
+function stepLabel(n){ return n<=1?"direct":n+" steps"; }
+
+/* Categories are read off the results, never hard-coded: cooking groups by the
+   game's own EffectCategory, refining by the output's item group. A save with
+   nothing in a category simply never shows that chip. */
+const PICKED={cook:null,refine:null,craft:null};
+const OTHER={cook:null,refine:null,craft:null};
+function buildChips(which,rows){
+  const box=document.getElementById("chips"+({cook:"",refine:"R",craft:"C"})[which]);
+  const counts=new Map();
+  for(const r of rows) counts.set(r.cat,(counts.get(r.cat)||0)+1);
+  let order=[...counts.entries()].sort((a,b)=>
+    (a[0]==="No effect")-(b[0]==="No effect") || b[1]-a[1]);
+  if(order.length>9){                    // fold the long tail into one chip
+    const keep=order.filter(e=>e[1]>1).slice(0,8);
+    const rest=order.filter(e=>!keep.includes(e));
+    if(rest.length>1){
+      const n=rest.reduce((a,e)=>a+e[1],0);
+      OTHER[which]=new Set(rest.map(e=>e[0]));
+      order=keep.concat([["Other",n]]);
+    }
+  } else { OTHER[which]=null; }
+  const all='<button class="chip" type="button" data-cat="" aria-pressed="'+
+            (PICKED[which]===null)+'">All<span class="n">'+rows.length+'</span></button>';
+  box.innerHTML=all+order.map(([c,n])=>
+    '<button class="chip" type="button" data-cat="'+c.replace(/"/g,"&quot;")+'" aria-pressed="'+
+    (PICKED[which]===c)+'">'+c+'<span class="n">'+n+'</span></button>').join("");
+  box.querySelectorAll(".chip").forEach(b=>b.addEventListener("click",()=>{
+    const c=b.dataset.cat||null;
+    PICKED[which]=(PICKED[which]===c)?null:c;
+    buildChips(which,rows);
+    drawRows(which,rows);
+  }));
+}
+function drawRows(which,rows){
+  const SF={cook:"",refine:"R",craft:"C"};
+  const q=(($("#q"+SF[which]).value)||"").toLowerCase();
+  const directOnly=$("#direct"+SF[which]).checked;
+  let sel=rows;
+  if(PICKED[which]==="Other"&&OTHER[which]) sel=sel.filter(r=>OTHER[which].has(r.cat));
+  else if(PICKED[which]) sel=sel.filter(r=>r.cat===PICKED[which]);
+  if(directOnly) sel=sel.filter(r=>r.step<=1);
+  if(q) sel=sel.filter(r=>(r.name+" "+r.ins.map(i=>i.name).join(" ")+" "+(r.e?r.e.cat:"")).toLowerCase().includes(q));
+  const chained=rows.filter(r=>r.step>1).length;
+  $("#count"+SF[which]).textContent=
+    sel.length+" of "+rows.length+({cook:" dishes",refine:" products",craft:" items"})[which]+
+    (chained?"  \u00b7  "+chained+" need an intermediate first":"");
+  $("#"+which+"Rows").innerHTML=sel.map(r=>{
+    const cls=r.e?(EFFECT_CLASS[r.e.cat]||""):"";
+    const path=r.ins.map(i=>i.cooked
+      ? '<button type="button" class="made jump" data-jump="'+i.name.replace(/"/g,"&quot;")+
+        '" title="Show how to make '+i.name.replace(/"/g,"&quot;")+'">'+i.q+' &times; '+i.name+'</button>'
+      : '<span>'+i.q+' &times; '+i.name+'</span>').join(", ");
+    return '<tr><td class="r num qty">'+fmt(r.n)+'</td>'+
+      '<td><span class="pill step'+(r.step>1?" multi":"")+'">'+stepLabel(r.step)+'</span></td>'+
+      '<td><button type="button" class="dish" data-dish="'+r.name.replace(/"/g,"&quot;")+
+        '" title="Show how to make '+r.name.replace(/"/g,"&quot;")+'">'+r.name+'</button>'+
+        (r.qty>1?' <span class="ins">&times;'+r.qty+'</span>':'')+'</td>'+
+      (which==="cook"?'<td>'+(r.e?'<span class="pill '+cls+'">'+r.e.cat+'</span>'+
+        (r.e.detail?' <span class="ins">'+r.e.detail+'</span>':''):'<span class="ins">&mdash;</span>')+'</td>':'')+
+      '<td class="r num">'+(r.val?fmt(r.val):"&mdash;")+'</td>'+
+      '<td class="ins">'+r.op+'</td><td class="ins">'+path+'</td></tr>';
+  }).join("") || '<tr><td colspan="7" class="ins">Nothing matches.</td></tr>';
+  document.getElementById(which+"Rows").querySelectorAll(".dish").forEach(b=>
+    b.addEventListener("click",()=>{
+      OPEN[which]=b.dataset.dish;
+      renderPlan(which,rows,b.dataset.dish,1);
+    }));
+  document.getElementById(which+"Rows").querySelectorAll(".jump").forEach(b=>
+    b.addEventListener("click",()=>{
+      PICKED[which]=null;
+      const SF2={cook:"",refine:"R",craft:"C"};
+      const box=$("#q"+SF2[which]);
+      box.value=b.dataset.jump;
+      buildChips(which,rows); drawRows(which,rows);
+      box.scrollIntoView({block:"center",behavior:"smooth"});
+    }));
+}
+document.getElementById("qI").addEventListener("input",locate);
+document.getElementById("consolBtn").addEventListener("click",()=>{
+  const box=document.getElementById("consol");
+  box.hidden=!box.hidden;
+  document.getElementById("consolBtn").setAttribute("aria-pressed",String(!box.hidden));
+  renderConsolidation();
+  if(!box.hidden) box.scrollIntoView({block:"nearest"});
+});
+for(const [id,which] of [["q","cook"],["direct","cook"],["qR","refine"],["directR","refine"],
+                         ["qC","craft"],["directC","craft"]]){
+  const el=document.getElementById(id);
+  el.addEventListener(el.type==="checkbox"?"change":"input",
+    ()=>drawRows(which,{cook:window.__cook,refine:window.__refine,craft:window.__craft}[which]||[]));
+}
+
+/* file loading — clears input.value both sides, the stale-pick bug from nms-core-run */
+const fileEl=$("#file");
+$("#pick").addEventListener("click",()=>{fileEl.value="";fileEl.click();});
+fileEl.addEventListener("change",async e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  try{
+    const root=inflateSave(await f.arrayBuffer());
+    const ps=playerState(root);
+    const ctx=root[ACTIVE]==="Season"?"expedition save":"main save";
+    render(harvest(ps),currencies(ps),Math.floor(f.lastModified/1000),
+           f.name+" \u2014 "+ctx, containersFrom(ps));
+    window.scrollTo({top:0,behavior:"smooth"});
+  }catch(err){
+    $("#freshText").innerHTML='<b style="color:var(--rose)">'+err.message+'</b>';
+  }
+  fileEl.value="";
+});
+document.addEventListener("dragover",e=>e.preventDefault());
+document.addEventListener("drop",e=>{
+  e.preventDefault();
+  const f=e.dataTransfer.files&&e.dataTransfer.files[0];
+  if(f){const dt=new DataTransfer();dt.items.add(f);fileEl.files=dt.files;fileEl.dispatchEvent(new Event("change"));}
+});
+
+/* ---------- views ---------- */
+function showView(v){
+  document.querySelectorAll("section[data-view]").forEach(sec=>
+    sec.classList.toggle("on",sec.dataset.view===v));
+  document.querySelectorAll(".tab").forEach(t=>
+    t.setAttribute("aria-selected",String(t.dataset.view===v)));
+  try{localStorage.setItem("nmsKitchenView",v);}catch(e){}
+}
+document.querySelectorAll(".tab").forEach(t=>
+  t.addEventListener("click",()=>showView(t.dataset.view)));
+
+/* ---------- live reading ----------
+   Served by kitchen.py the page can re-read the save on demand. Opened as a
+   plain file or as the published artifact there is no server, so Refresh hides
+   itself and the file picker stays the way in. */
+function apply(d,label){
+  render(d.held,{units:d.units,nanites:d.nanites,quicksilver:d.quicksilver},
+         d.saveMtime, label||(d.savePath+(d.context==="Season"?" \u2014 expedition save":"")),
+         d.containers);
+}
+async function live(force){
+  const r=await fetch("data.json"+(force?"?force=1":""),{cache:"no-store"});
+  const j=await r.json();
+  if(!j.ok||!j.data) throw new Error(j.error||"no data");
+  apply(j.data);
+  return true;
+}
+const refreshBtn=document.getElementById("refresh");
+refreshBtn.addEventListener("click",async()=>{
+  refreshBtn.disabled=true; const was=refreshBtn.textContent; refreshBtn.textContent="Reading\u2026";
+  try{ await live(true); }
+  catch(err){ $("#freshText").innerHTML='<b style="color:var(--rose)">'+err.message+'</b>'; }
+  refreshBtn.disabled=false; refreshBtn.textContent=was;
+});
+
+const EMPTY=!BAKED||!BAKED.held||!Object.keys(BAKED.held).length;
+if(EMPTY){
+  $("#freshText").innerHTML="No save loaded yet \u2014 run <b>kitchen.py</b> to read yours "+
+    "automatically, or press <b>Load a save</b> and pick <b>save.hg</b>.";
+  $("#tiles").innerHTML="";
+  document.querySelectorAll("section[data-view] .tablewrap, #baits, .chips, .filterbar")
+    .forEach(el=>el.style.display="none");
+  document.querySelectorAll("section[data-view] .lede").forEach(el=>el.style.opacity=".55");
+}else{
+  apply(BAKED,BAKED.savePath+" (baked snapshot)");
+}
+let startView="cook";
+try{ startView=localStorage.getItem("nmsKitchenView")||"cook"; }catch(e){}
+showView(startView);
+live(false).then(()=>{refreshBtn.hidden=false;}).catch(()=>{});
+</script>
