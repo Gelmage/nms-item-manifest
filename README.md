@@ -68,9 +68,23 @@ the other save's numbers.
 ## Where the game data comes from
 
 Item names, recipes and effects are datamined v7.00 tables from
-[bradhave94/nms-data-extractor](https://github.com/bradhave94/nms-data-extractor).
-The game's own copies live in `HGPAK` archives, which are not PSARC and would
-need separate reverse engineering.
+[bradhave94/nms-data-extractor](https://github.com/bradhave94/nms-data-extractor)
+(MIT). The game's own copies live in `HGPAK` archives, which are not PSARC and
+would need separate reverse engineering.
+
+**The tables are committed, not downloaded at runtime.** That is deliberate: the
+tool then works offline, and cannot be broken by an upstream repository moving
+or disappearing. A given commit always behaves the same way.
+
+The cost is that a game patch can make a recipe stale, so refreshing is a
+deliberate act:
+
+    python3 refresh_tables.py --check    report what would change
+    python3 refresh_tables.py            refresh the tables
+    python3 build.py                     rebuild the page
+
+`--check` warns if items have vanished upstream, which is the signal that
+something went wrong rather than that the game changed.
 
 Container names come from the MBINCompiler key mapping: the game's stack-size
 group is not a name — it reports "Chest" for all ten storage containers.
