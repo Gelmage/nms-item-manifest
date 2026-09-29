@@ -518,12 +518,23 @@ function render(held,cur,stamp,label,containers){
   document.querySelectorAll("section[data-view] .tablewrap, #baits, .chips, .filterbar")
     .forEach(el=>el.style.display="");
   document.querySelectorAll("section[data-view] .lede").forEach(el=>el.style.opacity="");
-  const age=(Date.now()/1000-stamp)/86400;
+  const mins=(Date.now()/1000-stamp)/60;
   const f=$("#fresh");
-  f.className="fresh"+(age>2?" stale":"");
-  $("#freshText").innerHTML="Reading <b>"+label+"</b> &middot; saved "+
-    new Date(stamp*1000).toLocaleString()+" &middot; "+
-    (age<1?"today":Math.round(age)+" days ago");
+  const running=window.__gameRunning;
+  // stale is about the gap since the last write, not the calendar date: the
+  // game holds changes in memory and only writes them on a save
+  f.className="fresh"+((running&&mins>10)||mins>2880?" stale":"");
+  const ago = mins<1 ? "just now"
+            : mins<60 ? Math.round(mins)+" min ago"
+            : mins<2880 ? Math.round(mins/60)+"h ago"
+            : Math.round(mins/1440)+" days ago";
+  let note="";
+  if(running&&mins>10)
+    note=" &middot; <b>the game is running and has not saved for "+ago.replace(" ago","")+
+         "</b> &mdash; save in game, then Refresh";
+  else if(running)
+    note=" &middot; game is running, so anything since the last save is not here yet";
+  $("#freshText").innerHTML="Reading <b>"+label+"</b> &middot; saved "+ago+note;
 
   window.__held=held;
   window.__cook=rowsFor(held,IDX.cook,6,"effect");     window.__cookInfo=rowsFor.lastInfo;
@@ -917,6 +928,7 @@ document.querySelectorAll(".tab").forEach(t=>
    plain file or as the published artifact there is no server, so Refresh hides
    itself and the file picker stays the way in. */
 function apply(d,label){
+  window.__gameRunning=d.gameRunning;
   render(d.held,{units:d.units,nanites:d.nanites,quicksilver:d.quicksilver},
          d.saveMtime, label||(d.savePath+(d.context==="Season"?" \u2014 expedition save":"")),
          d.containers);

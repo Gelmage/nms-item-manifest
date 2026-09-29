@@ -154,6 +154,21 @@ def containers(ps):
     return [c for c in found if c["cap"] or c["items"]]
 
 
+def game_running():
+    """Whether NMS is open. If it is, the file on disk lags what the player
+    sees: the game keeps changes in memory and only writes on a save."""
+    try:
+        if os.name == "nt":
+            out = subprocess.run(["tasklist", "/FI", "IMAGENAME eq NMS.exe"],
+                                 capture_output=True, text=True, timeout=5).stdout
+            return "NMS.exe" in out
+        out = subprocess.run(["pgrep", "-f", "NMS.exe"],
+                             capture_output=True, text=True, timeout=5)
+        return out.returncode == 0
+    except Exception:
+        return None          # unknown - say nothing rather than guess
+
+
 def reading(save_path=None):
     save = Path(nms_save.newest_save(save_path))
     root = nms_save.decompress(save)
@@ -173,6 +188,7 @@ def reading(save_path=None):
         "context": root.get(ACTIVE_CONTEXT),
         "saveMtime": int(save.stat().st_mtime),
         "savePath": save.name,
+        "gameRunning": game_running(),
     }
 
 
@@ -214,6 +230,7 @@ class Handler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path in ("/", "/index.html"):
             try:
+                # no-store, or a rebuilt page keeps losing to the browser cache
                 self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             except OSError:
                 self._send(500,
