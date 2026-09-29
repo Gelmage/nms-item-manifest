@@ -7,6 +7,8 @@ map of where every item is stored across every container.
 Read-only. Your save is opened, decoded in memory, and never written to.
 Nothing is uploaded: the page runs on your own machine.
 
+![Crafting view](screenshots/crafting.png)
+
 ## Run it
 
 **Windows** — double-click `NMS Item Manifest (Windows).bat`
@@ -40,6 +42,16 @@ reward tables. Click any dish for a build plan.
 **Inventory** — every container with its real capacity, what it holds, what it
 is worth, an item locator that answers "where is my Chromatic Metal", and a
 consolidation view showing stacks you could merge and how many slots that frees.
+
+![Inventory view](screenshots/inventory.png)
+
+Capacity is the unlocked-slot count, not the number of occupied slots: the game
+only writes slots that hold something, so a chest listing 50 items and a suit
+listing 50 items look identical in the file until you read the slot list.
+
+**Cooking**, with effects and values straight from the game's reward tables:
+
+![Cooking view](screenshots/cooking.png)
 
 Build plans spend what you already hold before crafting anything, and list the
 operations in the order you would actually do them.
