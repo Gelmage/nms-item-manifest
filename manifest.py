@@ -210,7 +210,12 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
             except OSError:
-                self._send(500, b"index.html is missing.", "text/plain; charset=utf-8")
+                self._send(500,
+                           b"index.html is missing from this instance.\n\n"
+                           b"This usually means the program is still running from a "
+                           b"folder that has been moved, renamed or deleted.\n"
+                           b"Stop it and start it again.\n",
+                           "text/plain; charset=utf-8")
             return
         if path == "/data.json":
             data, error = self.reader.current(force="force=1" in self.path)
@@ -265,12 +270,33 @@ def open_window(url):
 
 
 def already_running(port):
+    """True only if a HEALTHY instance is already serving on this port.
+
+    Checking /data.json alone is not enough: an instance started from a folder
+    that has since been renamed keeps answering it while its copy of index.html
+    has vanished underneath it, so the browser opens on "index.html is missing"
+    and the launcher thinks everything is fine. The page itself must be servable.
+    """
     try:
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/data.json", timeout=1.5) as r:
             json.loads(r.read().decode("utf-8"))
-            return True
     except (urllib.error.URLError, OSError, ValueError):
         return False
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/", timeout=1.5) as r:
+            return r.status == 200 and len(r.read(2048)) > 0
+    except (urllib.error.URLError, OSError):
+        return False
+
+
+def preflight():
+    """Fail loudly at startup rather than with a blank page later."""
+    missing = [n for n in ("index.html", "nms_index.json", "container_names.json")
+               if not (HERE / n).is_file()]
+    if missing:
+        raise FileNotFoundError(
+            "missing from " + str(HERE) + ": " + ", ".join(missing)
+            + ("\nRun:  python3 build.py" if "index.html" in missing else ""))
 
 
 def main():
@@ -279,6 +305,8 @@ def main():
     ap.add_argument("--print", action="store_true", dest="dump")
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args()
+
+    preflight()
 
     if args.dump:
         d = reading()
