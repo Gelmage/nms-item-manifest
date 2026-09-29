@@ -306,7 +306,16 @@ const CNAMES=JSON.parse(document.getElementById("nmsNames").textContent);
 const IT=IDX.items;
 const $=s=>document.querySelector(s);
 const fmt=n=>(n??0).toLocaleString("en-US");
-const nameOf=id=>(IT[id]&&IT[id].n)||id;
+/* Procedural curiosities (PROC_FAMILY#SEED) have names generated from the seed
+   at runtime. They are not in the save and the community tables that hold them
+   run to ~247 MB, so the family and seed are shown instead of inventing a name. */
+const nameOf=id=>{
+  const it=IT[id];
+  if(it&&it.n) return it.n;
+  const m=/^(PROC_[A-Z]+)#(\d+)$/.exec(id);
+  if(m) return m[1].slice(5)+" \u00b7 "+m[2]+" (procedural)";
+  return id;
+};
 /* 1,967 items carry their own RequiredItems. Reshaped into the same form the
    solver already takes, so crafting costs one line rather than a second engine. */
 IDX.craft=Object.keys(IT).filter(k=>IT[k].r).map(k=>({i:IT[k].r,o:k,q:1,op:"Craft"}));
@@ -401,8 +410,9 @@ function containersFrom(ps){
     out.push({label:label,cls:(node["B@N"]||{})["1o6"]||cls||"",
       used:node[SLOTS].length, cap:Array.isArray(valid)?valid.length:node[SLOTS].length,
       items:node[SLOTS].filter(x=>x&&typeof x[ITEM]==="string"&&Number.isInteger(x[AMT])&&x[AMT]>0)
-        .map(x=>({id:x[ITEM].slice(1).split("#")[0],n:x[AMT],
-                  m:x["F9q"]||0,t:(x["Vn8"]||{})["elv"]||""}))});
+        .map(x=>{const b=x[ITEM].slice(1);
+                 return {id:b.startsWith("PROC_")?b:b.split("#")[0],n:x[AMT],
+                         m:x["F9q"]||0,t:(x["Vn8"]||{})["elv"]||""};})});
   };
   for(const [k,v] of Object.entries(ps))
     if(v&&typeof v==="object"&&Array.isArray(v[SLOTS]))

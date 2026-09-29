@@ -90,7 +90,13 @@ def read_slots(slots):
             continue
         if not isinstance(qty, int) or qty <= 0:
             continue
-        out.append((iid.lstrip("^").split("#")[0], qty,
+        # "^UP_SHOT3#56080" is one upgrade rolled from a seed: the base id
+        # names it, so the seed is dropped. "^PROC_PLNT#04361" is a procedural
+        # curiosity where the seed IS the item - two of them are different
+        # objects, and collapsing them merges distinct things into duplicates.
+        bare = iid.lstrip("^")
+        key = bare if bare.startswith("PROC_") else bare.split("#")[0]
+        out.append((key, qty,
                     s.get(MAX_AMOUNT) or 0,
                     (s.get(SLOT_TYPE) or {}).get(TYPE_NAME) or ""))
     return out

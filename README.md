@@ -127,8 +127,14 @@ group is not a name — it reports "Chest" for all ten storage containers.
 - Tables are v7.00. A later patch could change a recipe.
 - Recipe counts are per-item maximums: each assumes you spend your stock on that
   one item. Read them as a menu, not a sum.
-- Procedurally generated items (upgrade modules, artifacts) have no fixed names
-  and show as their internal id.
+- Procedural curiosities show as `FAMILY · SEED (procedural)` rather than a
+  name. Their names are generated from the seed at runtime and are not stored
+  in the save; the community tables that hold them run to roughly 247 MB across
+  21 families, against a 727 KB tool. They are at least kept distinct from one
+  another, which matters because two items in the same family are different
+  objects, not duplicates.
+- Procedural technology upgrades do resolve, because the base id names them and
+  the seed only sets the roll.
 - It answers "can I reach this", not "what is the best use of my stock". It is
   not a scheduler.
 
