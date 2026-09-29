@@ -61,6 +61,7 @@ jobs:
           manifest.py
 
       - name: Smoke test - does it run?
+        timeout-minutes: 2
         run: |
           & ".\dist\NMS Item Manifest.exe" --print
           if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {

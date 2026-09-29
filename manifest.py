@@ -326,5 +326,14 @@ if __name__ == "__main__":
                 ctypes.windll.user32.MessageBoxW(0, str(exc), "NMS Item Manifest", 0x10)
             except Exception:
                 pass
-        input("\nPress Enter to close.") if sys.stdin and sys.stdin.isatty() else None
+        # a double-clicked window closes instantly without this; a CI runner
+        # would hang on it forever, so skip when automation is detected
+        interactive = (sys.stdin and sys.stdin.isatty()
+                       and not os.environ.get("CI")
+                       and not os.environ.get("GITHUB_ACTIONS"))
+        if interactive:
+            try:
+                input("\nPress Enter to close.")
+            except EOFError:
+                pass
         raise
