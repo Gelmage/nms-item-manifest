@@ -311,27 +311,32 @@ if __name__ == "__main__":
     except Exception as exc:
         msg = f"NMS Item Manifest could not start:\n\n{exc}"
         print(msg, file=sys.stderr)
-        # a desktop launcher has no console, so try for a dialog too
-        for cmd in (["kdialog", "--error", msg],
-                    ["zenity", "--error", "--text", msg],
-                    ["osascript", "-e", f'display alert "NMS Item Manifest" message "{exc}"']):
-            try:
-                subprocess.run(cmd, check=True, capture_output=True)
-                break
-            except Exception:
-                continue
+
+        # Everything below is for a human looking at a window. Under automation
+        # there is nobody to dismiss a modal or press a key, and both of those
+        # block forever - which is exactly how the first CI build hung.
+        if os.environ.get("CI") or os.environ.get("GITHUB_ACTIONS"):
+            raise
+
         if os.name == "nt":
             try:
                 import ctypes
-                ctypes.windll.user32.MessageBoxW(0, str(exc), "NMS Item Manifest", 0x10)
+                ctypes.windll.user32.MessageBoxW(0, str(exc),
+                                                 "NMS Item Manifest", 0x10)
             except Exception:
                 pass
-        # a double-clicked window closes instantly without this; a CI runner
-        # would hang on it forever, so skip when automation is detected
-        interactive = (sys.stdin and sys.stdin.isatty()
-                       and not os.environ.get("CI")
-                       and not os.environ.get("GITHUB_ACTIONS"))
-        if interactive:
+        else:
+            for cmd in (["kdialog", "--error", msg],
+                        ["zenity", "--error", "--text", msg],
+                        ["osascript", "-e",
+                         f'display alert "NMS Item Manifest" message "{exc}"']):
+                try:
+                    subprocess.run(cmd, check=True, capture_output=True, timeout=30)
+                    break
+                except Exception:
+                    continue
+
+        if sys.stdin and sys.stdin.isatty():
             try:
                 input("\nPress Enter to close.")
             except EOFError:
