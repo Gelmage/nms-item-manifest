@@ -21,8 +21,8 @@ def build(bake=False):
     payload = EMPTY
     if bake:
         sys.path.insert(0, str(HERE))
-        import kitchen
-        payload = kitchen.reading()
+        import manifest
+        payload = manifest.reading()
         print(f"baking {payload['savePath']}: {len(payload['held'])} item types "
               f"- DO NOT COMMIT the result")
 

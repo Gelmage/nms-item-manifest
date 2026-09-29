@@ -1,5 +1,5 @@
 @echo off
-REM Double-click to start the Nutrient Processor.
+REM Double-click to start the NMS Item Manifest.
 REM Windows ships no Python, so check for it before blaming the tool.
 
 setlocal
@@ -36,5 +36,5 @@ if errorlevel 1 (
     )
 )
 
-%PY% kitchen.py %*
+%PY% manifest.py %*
 if errorlevel 1 pause

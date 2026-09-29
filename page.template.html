@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>Nutrient Processor</title>
+<title>NMS Item Manifest</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root{
@@ -170,8 +170,8 @@ footer a{color:var(--muted)}
   <div class="wrap">
     <p class="kicker">No Man's Sky &middot; save reader</p>
     <div class="brand">
-      <h1>Nutrient Processor</h1>
-      <span class="sub">every dish and bait your current stock can actually produce</span>
+      <h1>Item Manifest</h1>
+      <span class="sub">what you are carrying, where it is, and what you can make from it</span>
     </div>
     <div class="fresh" id="fresh">
       <span id="freshText">&nbsp;</span>
@@ -897,7 +897,7 @@ function showView(v){
     sec.classList.toggle("on",sec.dataset.view===v));
   document.querySelectorAll(".tab").forEach(t=>
     t.setAttribute("aria-selected",String(t.dataset.view===v)));
-  try{localStorage.setItem("nmsKitchenView",v);}catch(e){}
+  try{localStorage.setItem("nmsManifestView",v);}catch(e){}
 }
 document.querySelectorAll(".tab").forEach(t=>
   t.addEventListener("click",()=>showView(t.dataset.view)));
@@ -928,7 +928,7 @@ refreshBtn.addEventListener("click",async()=>{
 
 const EMPTY=!BAKED||!BAKED.held||!Object.keys(BAKED.held).length;
 if(EMPTY){
-  $("#freshText").innerHTML="No save loaded yet \u2014 run <b>kitchen.py</b> to read yours "+
+  $("#freshText").innerHTML="No save loaded yet \u2014 run <b>manifest.py</b> to read yours "+
     "automatically, or press <b>Load a save</b> and pick <b>save.hg</b>.";
   $("#tiles").innerHTML="";
   document.querySelectorAll("section[data-view] .tablewrap, #baits, .chips, .filterbar")
@@ -938,7 +938,7 @@ if(EMPTY){
   apply(BAKED,BAKED.savePath+" (baked snapshot)");
 }
 let startView="cook";
-try{ startView=localStorage.getItem("nmsKitchenView")||"cook"; }catch(e){}
+try{ startView=localStorage.getItem("nmsManifestView")||"cook"; }catch(e){}
 showView(startView);
 live(false).then(()=>{refreshBtn.hidden=false;}).catch(()=>{});
 </script>

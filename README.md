@@ -1,4 +1,4 @@
-# Nutrient Processor
+# NMS Item Manifest
 
 Reads a No Man's Sky save and shows what you can actually make with what you
 are actually carrying — cooking, refining, crafting, fishing bait — plus a full
@@ -9,9 +9,9 @@ Nothing is uploaded: the page runs on your own machine.
 
 ## Run it
 
-**Windows** — double-click `Nutrient Processor (Windows).bat`
-**macOS** — double-click `Nutrient Processor (Mac).command`
-**Linux / Steam Deck** — run `./nutrient-processor.sh`
+**Windows** — double-click `NMS Item Manifest (Windows).bat`
+**macOS** — double-click `NMS Item Manifest (Mac).command`
+**Linux / Steam Deck** — run `./item-manifest.sh`
 
 It finds your save automatically, opens a page in your browser, and reads the
 save again whenever you press **Refresh**. Python 3 is required; the wrappers
@@ -20,9 +20,9 @@ install the one dependency (`lz4`) for you.
 By hand:
 
     pip install lz4
-    python3 kitchen.py              open the page
-    python3 kitchen.py --print      one reading to stdout, no browser
-    python3 kitchen.py --port 9000  serve somewhere else
+    python3 manifest.py              open the page
+    python3 manifest.py --print      one reading to stdout, no browser
+    python3 manifest.py --port 9000  serve somewhere else
 
 ## What it shows
 

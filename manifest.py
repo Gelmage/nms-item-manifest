@@ -5,10 +5,10 @@ Serves the page and re-reads the save on demand, so the Refresh button in the
 browser shows what is in your ship right now. Read-only: the save is opened,
 decoded in memory, never written.
 
-    python3 kitchen.py                 open the page
-    python3 kitchen.py --port 8788     serve somewhere else
-    python3 kitchen.py --print         dump a reading to stdout and exit
-    python3 kitchen.py --no-browser    serve only, open the URL yourself
+    python3 manifest.py                 open the page
+    python3 manifest.py --port 8788     serve somewhere else
+    python3 manifest.py --print         dump a reading to stdout and exit
+    python3 manifest.py --no-browser    serve only, open the URL yourself
 
 Windows, macOS, Linux and Steam Deck. The save is found automatically; nothing
 is uploaded and nothing is ever written back to it.
@@ -305,12 +305,12 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        msg = f"Nutrient Processor could not start:\n\n{exc}"
+        msg = f"NMS Item Manifest could not start:\n\n{exc}"
         print(msg, file=sys.stderr)
         # a desktop launcher has no console, so try for a dialog too
         for cmd in (["kdialog", "--error", msg],
                     ["zenity", "--error", "--text", msg],
-                    ["osascript", "-e", f'display alert "Nutrient Processor" message "{exc}"']):
+                    ["osascript", "-e", f'display alert "NMS Item Manifest" message "{exc}"']):
             try:
                 subprocess.run(cmd, check=True, capture_output=True)
                 break
@@ -319,7 +319,7 @@ if __name__ == "__main__":
         if os.name == "nt":
             try:
                 import ctypes
-                ctypes.windll.user32.MessageBoxW(0, str(exc), "Nutrient Processor", 0x10)
+                ctypes.windll.user32.MessageBoxW(0, str(exc), "NMS Item Manifest", 0x10)
             except Exception:
                 pass
         input("\nPress Enter to close.") if sys.stdin and sys.stdin.isatty() else None

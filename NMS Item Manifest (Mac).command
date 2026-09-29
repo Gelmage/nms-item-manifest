@@ -1,5 +1,5 @@
 #!/bin/bash
-# Double-click to start the Nutrient Processor.
+# Double-click to start the NMS Item Manifest.
 cd "$(dirname "$0")" || exit 1
 
 if ! command -v python3 >/dev/null 2>&1; then
@@ -18,4 +18,4 @@ python3 -c "import lz4" 2>/dev/null || {
         read -r -p "Press return to close."; exit 1; }
 }
 
-python3 kitchen.py "$@"
+python3 manifest.py "$@"

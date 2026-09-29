@@ -9,4 +9,4 @@ python3 -c "import lz4" 2>/dev/null || {
         echo "Could not install lz4. Try:  python3 -m pip install --user lz4"; exit 1; }
 }
 
-exec python3 kitchen.py "$@"
+exec python3 manifest.py "$@"
