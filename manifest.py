@@ -18,7 +18,11 @@ import urllib.error, urllib.request, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+# When PyInstaller freezes this into an exe, the bundled data files are
+# unpacked to a temporary directory that sys._MEIPASS points at; __file__ then
+# points somewhere useless. Everything read at runtime must resolve from HERE.
+FROZEN = getattr(sys, "frozen", False)
+HERE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
 sys.path.insert(0, str(HERE))
 import nms_save
 

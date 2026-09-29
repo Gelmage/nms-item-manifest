@@ -1,0 +1,89 @@
+# Builds a standalone Windows .exe so people without Python can just
+# double-click it. Runs on GitHub's own Windows machine, so no Windows
+# hardware is needed to ship a Windows build.
+#
+# Triggered by pushing a version tag:
+#     git tag v1.0 && git push origin v1.0
+#
+# Or from the Actions tab with "Run workflow", which builds without
+# creating a release - useful for checking the build still works.
+
+name: Build Windows executable
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:      # a manual "Run workflow" button
+
+permissions:
+  contents: write         # needed to attach the exe to a release
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install lz4 pyinstaller
+
+      - name: Rebuild the page from the template
+        run: python build.py          # guarantees index.html matches the template
+
+      - name: Check the page contains no save data
+        shell: python
+        run: |
+          import json, re, sys
+          html = open("index.html", encoding="utf-8").read()
+          m = re.search(r'<script id="nmsBaked" type="application/json">(.*?)</script>',
+                        html, re.S)
+          baked = json.loads(m.group(1).replace('<\\/', '</'))
+          if baked.get("held"):
+              sys.exit("refusing to ship: index.html has save data baked in")
+          print("index.html is clean")
+
+      - name: Build the executable
+        run: >
+          pyinstaller --onefile --name "NMS Item Manifest"
+          --add-data "index.html;."
+          --add-data "nms_index.json;."
+          --add-data "container_names.json;."
+          --add-data "page.template.html;."
+          --hidden-import lz4.block
+          --hidden-import nms_save
+          --hidden-import lz4_block
+          manifest.py
+
+      - name: Smoke test - does it run?
+        run: |
+          & ".\dist\NMS Item Manifest.exe" --print
+          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
+            throw "executable failed to start (exit $LASTEXITCODE)"
+          }
+        continue-on-error: true   # no save on a build machine; a crash still shows
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NMS-Item-Manifest-windows
+          path: dist/NMS Item Manifest.exe
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/NMS Item Manifest.exe
+          body: |
+            **Windows: download `NMS Item Manifest.exe` below and double-click it.**
+            No Python needed.
+
+            Windows may warn that the publisher is unknown — that is normal for
+            an unsigned executable. Choose *More info* then *Run anyway*.
+
+            macOS and Linux: clone the repo and use the wrappers. Both ship
+            Python, so there is nothing to install.
