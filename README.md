@@ -11,13 +11,34 @@ Nothing is uploaded: the page runs on your own machine.
 
 ## Run it
 
-**Windows** — double-click `NMS Item Manifest (Windows).bat`
-**macOS** — double-click `NMS Item Manifest (Mac).command`
-**Linux / Steam Deck** — run `./item-manifest.sh`
+**The easy way — no Python needed.** Download the file for your machine from
+[Releases](https://github.com/Gelmage/nms-item-manifest/releases) and
+double-click it:
+
+| You have | Download |
+|---|---|
+| Windows | `NMS-Item-Manifest-windows.exe` |
+| Mac with Apple Silicon (M1/M2/M3/M4) | `NMS-Item-Manifest-macos-apple-silicon` |
+| Mac with Intel | `NMS-Item-Manifest-macos-intel` |
+
+Both will warn that the program is unsigned, because it is. On Windows choose
+*More info* then *Run anyway*. On macOS right-click the file and choose *Open*,
+then *Open* again — only needed the first time. If macOS refuses outright:
+
+    chmod +x ~/Downloads/NMS-Item-Manifest-macos-*
+    xattr -d com.apple.quarantine ~/Downloads/NMS-Item-Manifest-macos-*
+
+Not sure which Mac you have? Apple menu → About This Mac. *Apple M1* or similar
+means Apple Silicon.
+
+**From source**, if you have Python — clone the repo and use the wrapper for
+your platform: `NMS Item Manifest (Windows).bat`,
+`NMS Item Manifest (Mac).command`, or `./item-manifest.sh`. They install the
+one dependency (`lz4`) for you. Note that macOS 12.3 and later ship no Python
+at all, so the downloaded build is usually the easier route there.
 
 It finds your save automatically, opens a page in your browser, and reads the
-save again whenever you press **Refresh**. Python 3 is required; the wrappers
-install the one dependency (`lz4`) for you.
+save again whenever you press **Refresh**.
 
 By hand:
 

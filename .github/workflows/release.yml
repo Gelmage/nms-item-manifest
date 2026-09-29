@@ -1,26 +1,40 @@
-# Builds a standalone Windows .exe so people without Python can just
-# double-click it. Runs on GitHub's own Windows machine, so no Windows
-# hardware is needed to ship a Windows build.
+# Builds standalone executables so people without Python can just double-click.
+# Built on GitHub's own Windows and macOS machines, so no Windows or Mac
+# hardware is needed to ship for them.
 #
 # Triggered by pushing a version tag:
 #     git tag v1.0 && git push origin v1.0
 #
-# Or from the Actions tab with "Run workflow", which builds without
-# creating a release - useful for checking the build still works.
+# Or from the Actions tab with "Run workflow", which builds without creating a
+# release - useful for checking the builds still work.
 
-name: Build Windows executable
+name: Build executables
 
 on:
   push:
     tags: ['v*']
-  workflow_dispatch:      # a manual "Run workflow" button
+  workflow_dispatch:
 
 permissions:
-  contents: write         # needed to attach the exe to a release
+  contents: write
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false        # one platform failing should not hide the others
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows
+            artifact: NMS Item Manifest.exe
+          - os: macos-13       # Intel. Also runs on Apple Silicon via Rosetta.
+            label: macos-intel
+            artifact: NMS Item Manifest
+          - os: macos-14       # Apple Silicon, native.
+            label: macos-apple-silicon
+            artifact: NMS Item Manifest
+
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,7 +48,7 @@ jobs:
           pip install lz4 pyinstaller
 
       - name: Rebuild the page from the template
-        run: python build.py          # guarantees index.html matches the template
+        run: python build.py
 
       - name: Check the page contains no save data
         shell: python
@@ -43,48 +57,83 @@ jobs:
           html = open("index.html", encoding="utf-8").read()
           m = re.search(r'<script id="nmsBaked" type="application/json">(.*?)</script>',
                         html, re.S)
-          baked = json.loads(m.group(1).replace('<\\/', '</'))
-          if baked.get("held"):
+          if json.loads(m.group(1).replace('<\\/', '</')).get("held"):
               sys.exit("refusing to ship: index.html has save data baked in")
           print("index.html is clean")
 
       - name: Build the executable
         run: >
           pyinstaller --onefile --name "NMS Item Manifest"
-          --add-data "index.html;."
-          --add-data "nms_index.json;."
-          --add-data "container_names.json;."
-          --add-data "page.template.html;."
+          --add-data "index.html${{ runner.os == 'Windows' && ';' || ':' }}."
+          --add-data "nms_index.json${{ runner.os == 'Windows' && ';' || ':' }}."
+          --add-data "container_names.json${{ runner.os == 'Windows' && ';' || ':' }}."
+          --add-data "page.template.html${{ runner.os == 'Windows' && ';' || ':' }}."
           --hidden-import lz4.block
           --hidden-import nms_save
           --hidden-import lz4_block
           manifest.py
 
-      - name: Smoke test - does it run?
+      - name: Smoke test
         timeout-minutes: 2
+        shell: bash
         run: |
-          & ".\dist\NMS Item Manifest.exe" --print
-          if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 1) {
-            throw "executable failed to start (exit $LASTEXITCODE)"
-          }
-        continue-on-error: true   # no save on a build machine; a crash still shows
+          # No save exists on a build machine, so a clean non-zero exit is the
+          # pass condition. What this catches is a bundle that cannot start at
+          # all - a missing data file, a missing import, or a hang.
+          set +e
+          out=$("./dist/${{ matrix.artifact }}" --print 2>&1)
+          code=$?
+          echo "$out"
+          if echo "$out" | grep -qiE "ModuleNotFoundError|No such file|Failed to execute|Traceback \(most"; then
+            if ! echo "$out" | grep -q "Could not find a No Man's Sky save"; then
+              echo "::error::the bundle is broken, not merely save-less"
+              exit 1
+            fi
+          fi
+          echo "started cleanly (exit $code)"
+
+      - name: Rename for the platform
+        shell: bash
+        run: |
+          cd dist
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv "NMS Item Manifest.exe" "NMS-Item-Manifest-${{ matrix.label }}.exe"
+          else
+            chmod +x "NMS Item Manifest"
+            mv "NMS Item Manifest" "NMS-Item-Manifest-${{ matrix.label }}"
+          fi
+          ls -la
 
       - uses: actions/upload-artifact@v4
         with:
-          name: NMS-Item-Manifest-windows
-          path: dist/NMS Item Manifest.exe
+          name: NMS-Item-Manifest-${{ matrix.label }}
+          path: dist/NMS-Item-Manifest-${{ matrix.label }}*
 
       - name: Attach to the release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/NMS Item Manifest.exe
+          files: dist/NMS-Item-Manifest-${{ matrix.label }}*
           body: |
-            **Windows: download `NMS Item Manifest.exe` below and double-click it.**
-            No Python needed.
+            Download the file for your machine and double-click it. No Python needed.
 
-            Windows may warn that the publisher is unknown — that is normal for
-            an unsigned executable. Choose *More info* then *Run anyway*.
+            | You have | Download |
+            |---|---|
+            | Windows | `NMS-Item-Manifest-windows.exe` |
+            | Mac with Apple Silicon (M1/M2/M3/M4) | `NMS-Item-Manifest-macos-apple-silicon` |
+            | Mac with Intel | `NMS-Item-Manifest-macos-intel` |
 
-            macOS and Linux: clone the repo and use the wrappers. Both ship
-            Python, so there is nothing to install.
+            **Windows** will say the publisher is unknown. That is normal for an
+            unsigned program: choose *More info*, then *Run anyway*.
+
+            **macOS** will say the developer cannot be verified. Right-click the
+            file and choose *Open*, then *Open* again — this is only needed the
+            first time. If Finder refuses to run it at all, open Terminal and run:
+
+                chmod +x ~/Downloads/NMS-Item-Manifest-macos-*
+                xattr -d com.apple.quarantine ~/Downloads/NMS-Item-Manifest-macos-*
+
+            Not sure which Mac you have? Apple menu → About This Mac. If it says
+            *Apple M1* or similar, take the Apple Silicon file.
+
+            **Linux** — clone the repository and run `./item-manifest.sh`.
