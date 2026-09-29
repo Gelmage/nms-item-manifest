@@ -60,6 +60,12 @@ reward tables. Click any dish for a build plan.
 
 **Crafting** — the 1,967 items that carry a recipe, solved the same way.
 
+**Trade** — every trade commodity you are carrying, grouped by the category the
+game shows in its description, with the economy to sell each group in. The
+category and value come from the game's own tables; the economy pairing is the
+community-documented trade loop, recorded because the game never states it. Both
+loops close over all seven categories, which is the main reason to trust it.
+
 **Inventory** — every container with its real capacity, what it holds, what it
 is worth, an item locator that answers "where is my Chromatic Metal", and a
 consolidation view showing stacks you could merge and how many slots that frees.
