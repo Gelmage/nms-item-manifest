@@ -65,6 +65,8 @@ game shows in its description, with the economy to sell each group in. The
 category and value come from the game's own tables; the economy pairing is the
 community-documented trade loop, recorded because the game never states it. Both
 loops close over all seven categories, which is the main reason to trust it.
+Every economy appears in game under any of four names, so hovering one shows
+all of them - a system labelled "Commercial" is the Trading economy.
 
 **Inventory** — every container with its real capacity, what it holds, what it
 is worth, an item locator that answers "where is my Chromatic Metal", and a

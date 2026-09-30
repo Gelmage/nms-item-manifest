@@ -166,6 +166,17 @@ section[data-view].on{display:block}
   border-bottom:1px solid var(--edge);padding-bottom:11px;margin-bottom:12px}
 .tradegrp h4{margin:0;font-size:16px;font-weight:600}
 .tradegrp .worth{margin-left:auto;font-family:"IBM Plex Mono",monospace;color:var(--jade)}
+.econ[data-alias]{position:relative;cursor:help;border-bottom:1px dotted currentColor}
+.econ[data-alias]::after{
+  content:"in game: " attr(data-alias);
+  position:absolute;left:50%;bottom:calc(100% + 7px);transform:translateX(-50%);
+  background:var(--void);color:var(--text);border:1px solid var(--edge);
+  border-radius:var(--r);padding:7px 11px;white-space:nowrap;
+  font-family:"IBM Plex Sans",sans-serif;font-size:12px;letter-spacing:0;
+  text-transform:none;font-weight:400;opacity:0;pointer-events:none;
+  transition:opacity .12s;z-index:20;box-shadow:0 6px 18px rgba(0,0,0,.55)}
+.econ[data-alias]:hover::after,.econ[data-alias]:focus-visible::after{opacity:1}
+@media (max-width:620px){.econ[data-alias]::after{white-space:normal;width:190px}}
 .econ{font-family:"Chakra Petch",sans-serif;font-size:10.5px;letter-spacing:.11em;
   text-transform:uppercase;padding:3px 9px;border-radius:2px;white-space:nowrap}
 .econ.sell{font-weight:600}
@@ -183,6 +194,7 @@ section[data-view].on{display:block}
 .tradeitems .q{color:var(--muted);font-family:"IBM Plex Mono",monospace}
 .tradeitems .v{color:var(--jade);font-family:"IBM Plex Mono",monospace}
 .tradeitems .where{grid-column:1/-1;color:var(--faint);font-size:11.5px;margin:-2px 0 3px}
+.lede.warn{border-left:3px solid var(--amber);padding-left:13px;color:var(--text);max-width:72ch}
 .routeh{font-family:"Chakra Petch",sans-serif;font-size:13px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--text);margin:34px 0 4px}
 .routes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
@@ -304,9 +316,10 @@ footer a{color:var(--muted)}
 
   <section data-view="trade">
     <h2>Trade goods</h2>
-    <p class="lede">Every trade commodity you are carrying, grouped by the category the game shows in its description. Each category is produced by one economy and wanted by another, so the economy to look for on the galaxy map is named against each group.</p>
+    <p class="lede">Every trade commodity you are carrying, grouped by the category the game shows in its description. Each category is produced by one economy and wanted by another, so the economy to look for on the galaxy map is named against each group. The game gives every economy four different names &mdash; <b>hover any economy</b> to see all of them.</p>
     <div class="tiles" id="tradeTiles"></div>
     <div id="tradeGroups"></div>
+    <p class="lede warn"><b>Watch the word "Construction".</b> As an <i>economy</i> it means Manufacturing &mdash; buy Minerals there. As a <i>trade-good category</i> it is something else entirely, and those sell in Scientific. Same word, two unrelated things.</p>
     <h3 class="routeh">The two trade loops</h3>
     <p class="lede">Buy where a category is produced, sell in the next system along. Both loops close, so you can run either indefinitely.</p>
     <div class="routes" id="routes"></div>
@@ -858,6 +871,26 @@ const LOOPS=[
   ["Three-system loop", ["Trading","Advanced Materials","Scientific"]],
   ["Four-system loop",  ["Mining","Manufacturing","Technology","Power Generation"]],
 ];
+/* Each economy appears under any of four names in game, and the galaxy map
+   shows whichever it picked. "Commercial" is Trading; "Construction" as an
+   ECONOMY is Manufacturing, which is not the same thing as the "Construction"
+   trade-good CATEGORY - the game reuses the word for both. Hover a badge to
+   see every name it can appear under. */
+const ECON_ALIASES={
+  "Trading":           ["Trading","Commercial","Mercantile","Shipping"],
+  "Advanced Materials":["Alchemical","Material Fusion","Metal Processing","Ore Processing"],
+  "Scientific":        ["Scientific","Research","Experimental","Mathematical"],
+  "Mining":            ["Mining","Minerals","Ore Extraction","Prospecting"],
+  "Manufacturing":     ["Manufacturing","Construction","Industrial","Mass Production"],
+  "Technology":        ["Technology","High Tech","Engineering","Nano-construction"],
+  "Power Generation":  ["Power Generation","Energy Supply","Fuel Generation","High Voltage"],
+};
+const aliasAttr=e=>{
+  const a=ECON_ALIASES[e];
+  if(!a) return "";
+  return ' tabindex="0" data-alias="'+a.join(" &middot; ").replace(/"/g,"&quot;")+
+         '" title="'+("Also shown as: "+a.filter(x=>x!==e).join(", ")).replace(/"/g,"&quot;")+'"';
+};
 const ECLS={"Trading":"e-trading","Advanced Materials":"e-advanced","Scientific":"e-scientific",
             "Mining":"e-mining","Manufacturing":"e-manufacturing","Technology":"e-technology",
             "Power Generation":"e-power"};
@@ -889,15 +922,15 @@ function renderTrade(){
         '<span class="v">'+fmt(x.qty*x.val)+'u</span>'+
         '<span class="where">in '+x.where+'</span></li>').join("");
       return '<div class="tradegrp"><header><h4>'+g+'</h4>'+
-        '<span class="econ sell '+r.cls+'">sell in '+r.sell+'</span>'+
-        '<span class="econ buy">bought in '+r.buy+'</span>'+
+        '<span class="econ sell '+r.cls+'"'+aliasAttr(r.sell)+'>sell in '+r.sell+'</span>'+
+        '<span class="econ buy"'+aliasAttr(r.buy)+'>bought in '+r.buy+'</span>'+
         '<span class="worth">~'+fmt(worth(items))+'u</span></header>'+
         '<ul class="tradeitems">'+rows+'</ul></div>';
     }).join("") || '<p class="ins">No trade commodities in this save.</p>';
 
   $("#routes").innerHTML=LOOPS.map(([title,econ])=>
     '<div class="route"><h5>'+title+'</h5><ol>'+
-    econ.map((e,i)=>'<li><span class="econ '+ECLS[e]+'">'+e+'</span></li>'+
+    econ.map((e,i)=>'<li><span class="econ '+ECLS[e]+'"'+aliasAttr(e)+'>'+e+'</span></li>'+
       (i<econ.length-1?'<li class="arrow">&darr;</li>':'')).join("")+
     '<li class="arrow">&#8635; back to '+econ[0]+'</li></ol></div>').join("");
 }
