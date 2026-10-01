@@ -27,9 +27,11 @@ jobs:
           - os: windows-latest
             label: windows
             artifact: NMS Item Manifest.exe
-          - os: macos-13       # Intel. Also runs on Apple Silicon via Rosetta.
-            label: macos-intel
-            artifact: NMS Item Manifest
+          # No Intel macOS leg: GitHub retired the free macos-13 runners, so that
+          # label never gets a machine. The job sat queued until the 24-hour
+          # timeout cancelled the whole run -- which is why v1.0 and v1.1 each
+          # published 2 of 3 assets. Intel Macs are not covered; they can still
+          # run the Python script directly.
           - os: macos-14       # Apple Silicon, native.
             label: macos-apple-silicon
             artifact: NMS Item Manifest
