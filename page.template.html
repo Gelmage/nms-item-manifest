@@ -131,6 +131,8 @@ td .made::before{content:"\21b3 ";opacity:.7}
   letter-spacing:.04em;text-transform:uppercase}
 .steps .eq{color:var(--muted)} .steps .eq b{color:var(--text);font-weight:600}
 .steps .arrow{color:var(--jade);padding:0 3px}
+.ingline{margin-top:3px;font-size:12.5px}
+.ingline b{color:var(--amber);font-weight:600}
 button.dish{background:none;border:0;padding:0;font:inherit;color:var(--text);cursor:pointer;
   text-align:left;letter-spacing:0;text-transform:none}
 button.dish:hover{color:var(--cyan);text-decoration:underline}
@@ -536,17 +538,23 @@ function rowsFor(held,recipes,maxSteps,catBy){
   const out=[];
   for(const [id,v] of info){
     if(!v.via) continue;                       // raw stock, not something you make
-    const r=v.via, e=effectOf(id), meta=IT[id]||{};
+    const r=v.via, e=effectOf(id), ing=ingestorOf(id), meta=IT[id]||{};
     out.push({
-      n:v.n, step:v.step, name:nameOf(id), qty:r.q||1, e:e,
-      cat: catBy==="effect" ? ((e&&e.cat)||"No effect")
-                             : (meta.g||"Other"),
+      n:v.n, step:v.step, name:nameOf(id), qty:r.q||1, e:e, ing:ing,
+      cat: catBy==="ingestor" ? ((ing&&ing.stat)||"No Ingestor effect")
+         : catBy==="effect"   ? ((e&&e.cat)||"No effect")
+                              : (meta.g||"Other"),
       val:meta.v||0, op:r.op||"",
       ins:r.i.map(([iid,q])=>({q:q,name:nameOf(iid),
                                cooked:(info.get(iid)||{}).step>0}))
     });
   }
-  return out.sort((a,b)=>a.step-b.step||b.n-a.n||a.name.localeCompare(b.name));
+  // Within a group, the biggest Ingestor bonus first -- comparing those is the
+  // whole point of the tab. Items with no known percentage fall to the bottom
+  // rather than being treated as zero.
+  const pc=x=>(x.ing&&x.ing.pct!=null)?Math.abs(x.ing.pct):-1;
+  return out.sort((a,b)=> (catBy==="ingestor" ? pc(b)-pc(a) : 0)
+                          || a.step-b.step||b.n-a.n||a.name.localeCompare(b.name));
 }
 
 const BAIT=[
@@ -601,6 +609,20 @@ function effectOf(id){
   return {cat:it.ec, detail:"Consume: "+parts.join(", ")};
 }
 
+/* The OTHER effect a food has. Eaten from the inventory you get effectOf();
+   loaded into a Nutrient Ingestor you get this instead -- a different stat
+   entirely, for much longer. Effect and duration come from the game files
+   (GcProductTable FoodBonusStat, and BaseFoodDuration 600s x CookingValue).
+   The percentage is from a community listing and only exists for some items,
+   so the bonus may be absent while the effect and duration are known. */
+function ingestorOf(id){
+  const it=IT[id]; if(!it||!it.ing) return null;
+  const g=it.ing, m=Math.floor(g.d/60), s=g.d%60;
+  return {stat:g.s, pct:(g.p==null?null:g.p),
+          dur:m+":"+String(s).padStart(2,"0"),
+          text:g.s+(g.p==null?"":" "+(g.p>0?"+":"")+g.p+"%")+" \u00b7 "+m+":"+String(s).padStart(2,"0")};
+}
+
 /* ---------- render ---------- */
 function render(held,cur,stamp,label,containers){
   window.__containers=containers||window.__containers||[];
@@ -626,7 +648,7 @@ function render(held,cur,stamp,label,containers){
   $("#freshText").innerHTML="Reading <b>"+label+"</b> &middot; saved "+ago+note;
 
   window.__held=held;
-  window.__cook=rowsFor(held,IDX.cook,6,"effect");     window.__cookInfo=rowsFor.lastInfo;
+  window.__cook=rowsFor(held,IDX.cook,6,"ingestor");     window.__cookInfo=rowsFor.lastInfo;
   window.__refine=rowsFor(held,IDX.refine,6,"group");  window.__refineInfo=rowsFor.lastInfo;
   window.__craft=rowsFor(held,IDX.craft,6,"group");    window.__craftInfo=rowsFor.lastInfo;
   const ingCount=Object.keys(held).filter(k=>IT[k]&&IT[k].cv!=null).length;
@@ -1010,7 +1032,7 @@ function drawRows(which,rows){
   if(PICKED[which]==="Other"&&OTHER[which]) sel=sel.filter(r=>OTHER[which].has(r.cat));
   else if(PICKED[which]) sel=sel.filter(r=>r.cat===PICKED[which]);
   if(directOnly) sel=sel.filter(r=>r.step<=1);
-  if(q) sel=sel.filter(r=>(r.name+" "+r.ins.map(i=>i.name).join(" ")+" "+(r.e?r.e.cat:"")).toLowerCase().includes(q));
+  if(q) sel=sel.filter(r=>(r.name+" "+r.ins.map(i=>i.name).join(" ")+" "+(r.e?r.e.cat:"")+" "+(r.ing?r.ing.stat:"")).toLowerCase().includes(q));
   const chained=rows.filter(r=>r.step>1).length;
   $("#count"+SF[which]).textContent=
     sel.length+" of "+rows.length+({cook:" dishes",refine:" products",craft:" items"})[which]+
@@ -1026,8 +1048,12 @@ function drawRows(which,rows){
       '<td><button type="button" class="dish" data-dish="'+r.name.replace(/"/g,"&quot;")+
         '" title="Show how to make '+r.name.replace(/"/g,"&quot;")+'">'+r.name+'</button>'+
         (r.qty>1?' <span class="ins">&times;'+r.qty+'</span>':'')+'</td>'+
-      (which==="cook"?'<td>'+(r.e?'<span class="pill '+cls+'">'+r.e.cat+'</span>'+
-        (r.e.detail?' <span class="ins">'+r.e.detail+'</span>':''):'<span class="ins">&mdash;</span>')+'</td>':'')+
+      (which==="cook"?'<td>'+
+        (r.e?'<span class="pill '+cls+'">'+r.e.cat+'</span>'+
+             (r.e.detail?' <span class="ins">'+r.e.detail+'</span>':'')
+            :'<span class="ins">&mdash;</span>')+
+        (r.ing?'<div class="ins ingline"><b>Ingestor:</b> '+r.ing.text+'</div>':'')+
+        '</td>':'')+
       '<td class="r num">'+(r.val?fmt(r.val):"&mdash;")+'</td>'+
       '<td class="ins">'+r.op+'</td><td class="ins">'+path+'</td></tr>';
   }).join("") || '<tr><td colspan="7" class="ins">Nothing matches.</td></tr>';
