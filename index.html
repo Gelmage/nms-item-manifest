@@ -564,28 +564,41 @@ function effectOf(id){
   const parts=[];
   if(it.es) for(const [k,v] of Object.entries(it.es)){
     // Label: strip the MBIN wrapper ("GcRewardJetpackBoost.Duration" -> "Jetpack
-    // Boost Duration"), then drop it entirely when it only repeats the category.
+    // Boost Duration"), then drop it when it only repeats the category.
     let label=k.replace(/^Gc(Reward)?/,"").replace(/RechargeAmount|Amount|Bonus/g,"")
                .replace(/\./g," ").replace(/([a-z])([A-Z])/g,"$1 $2")
                .replace(/\s+/g," ").trim();
     if(label===it.ec) label="";
+
     let val;
     if(/Duration/i.test(k)){
-      // Duration fields are seconds, not a magnitude. Showing "+8" for an 8
-      // second jetpack boost read as a +8% bonus, which it is not.
+      // Seconds, not a magnitude. "+8" for an 8 second jetpack boost read as a
+      // +8% bonus, which it is not.
       const s=Math.round(v);
       val = s>=60 ? Math.floor(s/60)+":"+String(s%60).padStart(2,"0") : s+"s";
+    } else if(/RechargeAmount$/.test(k)){
+      // The sign on these two fields is a storage convention, not a penalty:
+      // every HazardProtectionRechargeAmount in the tables is negative (103 of
+      // 103) and every LifeSupportRechargeAmount is positive (101 of 101). The
+      // game shows both to the player as a positive percentage -- the community
+      // listing for Perpetual Cake reads this same -50 as "50% Hazard
+      // Protection" -- so the magnitude is what is shown. The % on Life Support
+      // is inferred from the same pattern rather than confirmed against a
+      // second source.
+      val="+"+Math.abs(v)+"%";
     } else {
-      // Never emit "+-50". Every Hazard Protection value in the game tables is
-      // negative (103 of 103) because the field reduces the hazard drain rate --
-      // the sign is the game's internal convention, not a penalty. Print the
-      // real number with its real sign and let the in-game tooltip be the
-      // authority on how it reads to the player.
-      val=(v>0?"+":"")+v;
+      val=(v>0?"+":"")+v;          // never "+-50"
     }
     parts.push(label ? label+" "+val : val);
   }
-  return {cat:it.ec, detail:parts.join(", ")};
+  // Prefixed because this is only ONE of the two effects a food has. Eating it
+  // from the inventory gives this; putting it in a Nutrient Ingestor gives a
+  // different stat entirely, for CookingValue x 10 minutes. Perpetual Cake is
+  // Hazard Protection eaten and Jetpack Tanks ingested. That second effect is
+  // not in the current data source -- FoodBonusStat and FoodBonusStatAmount are
+  // exported empty for all 386 foods -- so the tool must not imply the line
+  // below is the whole story.
+  return {cat:it.ec, detail:"Consume: "+parts.join(", ")};
 }
 
 /* ---------- render ---------- */
